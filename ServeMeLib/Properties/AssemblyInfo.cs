@@ -1,17 +1,16 @@
 ﻿using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ServeMeLib")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("ServeMe")]
+[assembly: AssemblyDescription("ServeMe is a simple server for testing back-end service by serving both static files and json")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("ServeMeLib")]
-[assembly: AssemblyCopyright("Copyright ©  2018")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCompany("ServeMe")]
+[assembly: AssemblyProduct("ServeMe")]
+[assembly: AssemblyCopyright("Copyright Samuel Bamgboye ©  2018")]
+[assembly: AssemblyTrademark("ServeMeLib")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible

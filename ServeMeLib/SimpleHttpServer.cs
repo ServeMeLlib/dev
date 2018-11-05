@@ -8,9 +8,10 @@
     using System.Net;
     using System.Net.Sockets;
     using System.Reflection;
+    using System.Text.RegularExpressions;
     using System.Threading;
 
-    class SimpleHttpServer
+    internal class SimpleHttpServer
     {
         private readonly string[] _indexFiles = {
         "index.html",
@@ -20,7 +21,9 @@
     };
 
         private static IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase) {
+
         #region extension to MIME type list
+
         {".asf", "video/x-ms-asf"},
         {".asx", "video/x-ms-asf"},
         {".avi", "video/x-msvideo"},
@@ -85,8 +88,9 @@
         {".xml", "text/xml"},
         {".xpi", "application/x-xpinstall"},
         {".zip", "application/zip"},
-        #endregion
+        #endregion extension to MIME type list
     };
+
         private Thread _serverThread;
         private string _rootDirectory;
         private HttpListener _listener;
@@ -145,17 +149,14 @@
                 }
                 catch (Exception ex)
                 {
-
                 }
             }
         }
 
-
-
         private void Process(HttpListenerContext context)
         {
             string filename = context.Request.Url.AbsolutePath;
-            Console.WriteLine(filename);
+            //Console.WriteLine(filename);
             filename = filename.Substring(1);
             var currentPath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             var loc = currentPath + "\\server.csv";
@@ -172,13 +173,13 @@
                         continue;
 
                     var from = parts[0];
-                    if (context.Request.Url.PathAndQuery.ToLower().Trim() != from.Trim())
+
+                    if (!new Regex(from).Match(context.Request.Url.PathAndQuery.ToLower().Trim()).Success)
                         continue;
 
                     var to = parts[1];
                     filename = to;
                     break;
-
                 }
             }
 
@@ -194,7 +195,12 @@
                 }
             }
 
-            filename = Path.Combine(this._rootDirectory, filename);
+            filename = filename ?? "";
+            if (!filename.Contains(":"))
+            {
+                filename = Path.Combine(this._rootDirectory, filename);
+            }
+          
 
             if (File.Exists(filename))
             {
@@ -205,7 +211,13 @@
                     //Adding permanent http response headers
                     string mime;
 
-                    context.Response.ContentType = filename.EndsWith(".json") ? "application/json" : _mimeTypeMappings.TryGetValue(Path.GetExtension(filename), out mime) ? mime : "application/octet-stream";
+                    if (filename.EndsWith(".json"))
+                        context.Response.ContentType = "application/json";
+                    else if (_mimeTypeMappings.TryGetValue(Path.GetExtension(filename), out mime))
+                        context.Response.ContentType = mime;
+                    else
+                        context.Response.ContentType = "application/octet-stream";
+
                     context.Response.ContentLength64 = input.Length;
                     context.Response.AddHeader("Date", DateTime.Now.ToString("r"));
                     context.Response.AddHeader("Last-Modified", System.IO.File.GetLastWriteTime(filename).ToString("r"));
@@ -223,7 +235,6 @@
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 }
-
             }
             else
             {
