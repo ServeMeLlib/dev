@@ -7,7 +7,7 @@
     <ProjectGuid>{168B593A-D912-4CC0-B50F-ACEDADA43DCA}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>ServeMeLib</RootNamespace>
-    <AssemblyName>ServeMeLib</AssemblyName>
+    <AssemblyName>ServeMe</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
