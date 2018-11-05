@@ -204,3 +204,7 @@ FakesAssemblies/
 /src/.Akka.boltdata/NCover/Projects/Name/0.jf
 /src/.Akka.boltdata/Settings.json
 /src/.Akka.boltdata/TestResults.json
+ServeMeLib/.vs/ServeMeLib/v15/Server/sqlite3/db.lock
+ServeMeLib/.vs/ServeMeLib/v15/Server/sqlite3/storage.ide-wal
+ServeMeLib/.vs/ServeMeLib/v15/Server/sqlite3/storage.ide
+ServeMeLib/.vs/ServeMeLib/v15/Server/sqlite3/storage.ide-shm
