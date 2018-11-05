@@ -172,7 +172,7 @@
                         continue;
 
                     var from = parts[0];
-                    if (filename.ToLower().Trim() != from.Trim())
+                    if (context.Request.Url.PathAndQuery.ToLower().Trim() != from.Trim())
                         continue;
 
                     var to = parts[1];
