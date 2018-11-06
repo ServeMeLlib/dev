@@ -18,6 +18,8 @@ It behaves exactly like static deployments on Now, so it's perfect for developin
 But in addition , to serve json in response to an REST request, create a server.csv file containing url/json mapping of url pathAndQuery mapping to the json filename containing the json that should be served.
 
 ----
+Ok, so you want to do more? I've got you covered !
+----
 
 If you are using server.csv then note that the csv format is :
 [ pathAndQuery , some.json , httpMethod  , responseCode ]
