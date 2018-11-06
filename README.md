@@ -2,7 +2,7 @@
 Simple server for testing back-end service
 
 
-Simply drop it in a folder whose content you want to serve. It's just one exe file .
+Simply drop it in a folder whose content you want to serve. It's just one exe file 
 
 ----
 
@@ -20,11 +20,12 @@ Assuming you would like to serve a static site, single page application or just 
 It behaves exactly like static deployments on Now, so it's perfect for developing your static project. Then, when it's time to push it into production, you deploy it.
 `
 
-But in addition , to serve json in response to an REST request, create a server.csv file containing url/json mapping of url pathAndQuery mapping to the json filename containing the json that should be served.
 
 ----
 Ok, so you want to do more, like serve json data like it's coming from a real REST api server ? No worries :) I've got you covered !
 ----
+
+To serve json in response to an REST request, create a server.csv file containing url/json mapping of url pathAndQuery mapping to the json filename containing the json that should be served.
 
 If you are using server.csv then note that the csv format is :
 [ pathAndQuery , some.json , httpMethod  , responseCode ]
