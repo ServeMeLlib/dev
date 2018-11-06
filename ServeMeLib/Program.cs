@@ -6,13 +6,16 @@
     {
         static void Main(string[] args)
         {
-            new ServeMe().Start();
-            Console.ForegroundColor = ConsoleColor.White;
-            do
+            using (var server= new ServeMe())
             {
-                Console.WriteLine("Close window to exit");
+                server.Start();
+                Console.ForegroundColor = ConsoleColor.White;
+                do
+                {
+                    Console.WriteLine("Enter 'e' window to exit");
+                }
+                while (Console.ReadLine()?.Trim().ToLower() != "e");
             }
-            while (Console.ReadLine()?.Trim().ToLower() != "e");
         }
     }
 }
