@@ -6,7 +6,7 @@
     {
         static void Main(string[] args)
         {
-            using (var server= new ServeMe())
+            using (var server = new ServeMe())
             {
                 server.Start();
                 Console.ForegroundColor = ConsoleColor.White;

@@ -1,9 +1,7 @@
 ﻿namespace ServeMe.Tests
 {
-    using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Text;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using ServeMeLib;
 
@@ -13,45 +11,52 @@
         [TestMethod]
         public void TestMethod1()
         {
-            var serveMe = new ServeMe();
-            string url = serveMe.Start(null, @"getSome,{'ya':1},get,200").First();
-            string result = this.Get(url + "/getSome");
-            Assert.AreEqual("{'ya':1}", result);
+            string serverCsv = @"getSome,{'ya':1},get,200";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
         }
 
-        public string Get(string url)
+        [TestMethod]
+        public void TestMethod2()
         {
-            string html = string.Empty;
-            var request = (HttpWebRequest)WebRequest.Create(url);
-            request.AutomaticDecompression = DecompressionMethods.GZip;
-            using (var response = (HttpWebResponse)request.GetResponse())
-            using (Stream stream = response.GetResponseStream())
-            using (var reader = new StreamReader(stream))
+            string serverCsv = @"getSome,{'ya':2},get," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
             {
-                html = reader.ReadToEnd();
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
-
-            return html;
         }
 
-        public string Post(string uri, string data = "", string method = "POST")
+        [TestMethod]
+        public void TestMethod3()
         {
-            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
-            var request = (HttpWebRequest)WebRequest.Create(uri);
-            request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            request.ContentLength = dataBytes.Length;
-            request.ContentType = "application/json";
-            request.Method = method;
-            using (Stream requestBody = request.GetRequestStream())
+            string serverCsv = @"getSome,{'ya':1},post,200";
+            using (var serveMe = new ServeMe())
             {
-                requestBody.Write(dataBytes, 0, dataBytes.Length);
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
+        }
 
-            using (var response = (HttpWebResponse)request.GetResponse())
-            using (Stream stream = response.GetResponseStream())
-            using (var reader = new StreamReader(stream))
+        [TestMethod]
+        public void TestMethod4()
+        {
+            string serverCsv = @"getSome,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
             {
-                return reader.ReadToEnd();
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
         }
     }

@@ -155,6 +155,7 @@
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine(ex);
                 }
         }
 
@@ -163,10 +164,10 @@
             string filename = context.Request.Url.AbsolutePath;
             //Console.WriteLine(filename);
             filename = filename.Substring(1);
-            string currentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            string currentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
             string loc = currentPath + "\\server.csv";
 
-            if (string.IsNullOrEmpty(this.ServerCsv) || File.Exists(loc))
+            if (!string.IsNullOrEmpty(this.ServerCsv) || File.Exists(loc))
             {
                 string content = this.ServerCsv ?? File.ReadAllText(loc);
 
