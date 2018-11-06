@@ -42,4 +42,6 @@ Another example, to return a 404  when only GET /AllData , then server.csv will 
 UpdateOrder ,  {} , GET , 404
 
 ----
+This is how a sample server.csv looks like https://github.com/ServeMeLlib/dev/blob/master/server.csv
+----
 You get the gist :)
