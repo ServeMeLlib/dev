@@ -2,7 +2,7 @@
 Simple server for testing back-end service
 
 
-Simply drop in a folder whose content you want to serve. 
+Simply drop it in a folder whose content you want to serve. It's just one exe file .
 
 ----
 
