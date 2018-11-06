@@ -1,14 +1,13 @@
-﻿using System;
-
-namespace ServeMeLib
+﻿namespace ServeMeLib
 {
-    using System.Diagnostics;
+    using System;
 
-    internal class Program
+    class Program
     {
-        private static void Main(string[] args)
+        static void Main(string[] args)
         {
-            ServeMe.Start();
+            new ServeMe().Start();
+            Console.ForegroundColor = ConsoleColor.White;
             do
             {
                 Console.WriteLine("Close window to exit");
