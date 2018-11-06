@@ -6,6 +6,7 @@ Simply drop it in a folder whose content you want to serve. It's just one exe fi
 
 ----
 
+Download the lattest release here https://github.com/ServeMeLlib/dev/releases or get it from nuget 
 [![NuGet version](https://badge.fury.io/nu/serveme.svg)](https://badge.fury.io/nu/serveme)
 
 
