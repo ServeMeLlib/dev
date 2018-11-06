@@ -4,6 +4,10 @@ Simple server for testing back-end service
 
 Simply drop in a folder whose content you want to serve. 
 
+----
+
+[![NuGet version](https://badge.fury.io/nu/serveme.svg)](https://badge.fury.io/nu/serveme)
+
 
 ----
 
