@@ -30,6 +30,8 @@ To serve json in response to an REST request, create a server.csv file containin
 If you are using server.csv then note that the csv format is :
 [ pathAndQuery , some.json , httpMethod  , responseCode ]
 
+Note : that you can use regular expressions to pattern match the PathAndQuery !
+
 For example, to return content or orders.json when GET or POST /GetOrders , then server.csv will contain 
 GetOrders , orders.json
 
