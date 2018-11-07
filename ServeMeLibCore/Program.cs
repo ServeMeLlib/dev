@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ServeMeLibCore
+﻿namespace ServeMeLibCore
 {
     class Program
     {

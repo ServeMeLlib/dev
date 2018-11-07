@@ -1,6 +1,8 @@
 ﻿namespace ServeMeLib
 {
     using System;
+    using System.Diagnostics;
+    using System.Linq;
 
     class Program
     {
@@ -9,6 +11,7 @@
             using (var server = new ServeMe())
             {
                 server.Start();
+                //Process.Start(server.Start().First() + "/GetOrders2");
                 Console.ForegroundColor = ConsoleColor.White;
                 do
                 {

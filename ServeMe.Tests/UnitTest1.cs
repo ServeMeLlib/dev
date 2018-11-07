@@ -11,14 +11,13 @@
         [TestMethod]
         public void TestMethod()
         {
-            
             string serverCsv = @"getSome,http://www.google.com,get,200";
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(null, serverCsv).First();
                 HttpWebResponse result = (url + "/getSome").Get();
-                var finalResult = result.ReadStringFromResponse().Trim().ToLower();
-                Assert.IsTrue(finalResult.StartsWith("http"));
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }

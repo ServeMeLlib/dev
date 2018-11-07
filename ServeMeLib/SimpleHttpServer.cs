@@ -104,27 +104,29 @@
 
         Thread _serverThread;
 
-
         /// <summary>
         ///     Construct server with suitable port.
         /// </summary>
         /// <param name="path">Directory path to serve.</param>
-        public SimpleHttpServer(string path, ServeMe serveMe, int? port=null)
+        public SimpleHttpServer(string path, ServeMe serveMe, int? port = null)
         {
             ServicePointManager.DefaultConnectionLimit = 100;
-            HttpClientHandler handler = new HttpClientHandler()
+            var handler = new HttpClientHandler
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             };
             client = new HttpClient(handler);
 
             this.ServerCsv = serveMe.ServerCsv;
-            if (port == null) {//get an empty port
-            var l = new TcpListener(IPAddress.Loopback, 0);
-            l.Start();
-             port = ((IPEndPoint)l.LocalEndpoint).Port;
-            l.Stop(); }
-            
+            if (port == null)
+            {
+                //get an empty port
+                var l = new TcpListener(IPAddress.Loopback, 0);
+                l.Start();
+                port = ((IPEndPoint)l.LocalEndpoint).Port;
+                l.Stop();
+            }
+
             this.Initialize(path, port.Value);
         }
 
@@ -135,6 +137,8 @@
             get => this._port;
             private set { }
         }
+
+        static HttpClient client { set; get; }
 
         /// <summary>
         ///     Stop server and dispose all functions.
@@ -153,10 +157,10 @@
             this._listener.Start();
             while (true)
             {
-                HttpListenerContext context=null;
+                HttpListenerContext context = null;
                 try
                 {
-                     context = this._listener.GetContext();
+                    context = this._listener.GetContext();
                     this.Process(context);
                 }
                 catch (Exception ex)
@@ -164,10 +168,11 @@
                     Console.WriteLine(ex);
                     if (context?.Response != null)
                     {
-                   context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    context.Response.OutputStream?.Close();
+                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        context.Response.OutputStream?.Close();
                     }
-                }}
+                }
+            }
         }
 
         void Process(HttpListenerContext context)
@@ -177,7 +182,7 @@
             filename = filename.Substring(1);
             string currentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
             string loc = currentPath + "\\server.csv";
-            string responseCode="";
+            string responseCode = "";
             if (!string.IsNullOrEmpty(this.ServerCsv) || File.Exists(loc))
             {
                 string content = this.ServerCsv ?? File.ReadAllText(loc);
@@ -193,14 +198,14 @@
 
                     string from = parts[0].Trim();
 
-                    var fromParts=from.Split(' ');
+                    string[] fromParts = from.Split(' ');
                     //todo remove duplicate codes all over here
                     if (fromParts.Length > 1 && !string.IsNullOrEmpty(fromParts[0]) && !string.IsNullOrEmpty(fromParts[1]))
                     {
                         from = fromParts[1].Trim();
                         if ("exactly" == fromParts[0].Trim())
                         {
-                            if (from!=context.Request.Url.PathAndQuery)
+                            if (from != context.Request.Url.PathAndQuery.ToLower())
                                 continue;
                         }
                         else
@@ -215,15 +220,10 @@
                             continue;
                     }
 
-
-                   
-
                     string to = parts[1].Trim();
                     filename = to;
-                  var  expectedMethod = "GET";
+                    string expectedMethod = "GET";
                     if (parts.Length > 2)
-                    {
-                     
                         if (!string.IsNullOrEmpty(parts[2].Trim()))
                         {
                             expectedMethod = parts[2].Trim().ToUpper();
@@ -234,28 +234,27 @@
                                 return;
                             }
                         }
-                    }
-                    
-                    if (parts.Length > 3 || 
+
+                    if (parts.Length > 3 ||
                         to.StartsWith("{") || to.StartsWith("[") ||
                         to.StartsWith("http://") || to.StartsWith("https://")
-                        )
+                    )
                     {
-                         responseCode = parts[3].Trim();
-                       
+                        responseCode = parts[3].Trim();
 
                         if (to.StartsWith("http://") || to.StartsWith("https://"))
                         {
                             //expectedMethod
-                           var response= SendAsync(ToHttpRequestMessage(context.Request,to), expectedMethod, to);
+                            HttpResponseMessage response = SendAsync(ToHttpRequestMessage(context.Request, to), expectedMethod, to);
                             context.Response.StatusCode = (int)response.StatusCode;
-                           var stringResponse= response.Content.ReadAsStringAsync().Result;
+                            string stringResponse = response.Content.ReadAsStringAsync().Result;
                             context.Response.ContentType = response.Content.Headers.ContentType.MediaType;
                             new MemoryStream(Encoding.Default.GetBytes(stringResponse)).WriteTo(context.Response.OutputStream);
 
                             context.Response.OutputStream.Close();
                             return;
                         }
+
                         if (to.StartsWith("{") || to.StartsWith("["))
                         {
                             if (!string.IsNullOrEmpty(responseCode))
@@ -263,16 +262,17 @@
                                 int.TryParse(responseCode, out int code);
                                 context.Response.StatusCode = code;
                             }
+
                             string responseData = to.Trim();
                             if (!string.IsNullOrEmpty(responseData))
                             {
                                 context.Response.ContentType = "application/json";
                                 new MemoryStream(Encoding.Default.GetBytes(responseData)).WriteTo(context.Response.OutputStream);
                             }
+
                             context.Response.OutputStream.Close();
                             return;
                         }
-                        
                     }
 
                     break;
@@ -316,7 +316,7 @@
                         context.Response.OutputStream.Write(buffer, 0, nbytes);
                     input.Close();
 
-                    context.Response.StatusCode = (!string.IsNullOrEmpty(responseCode) && int.TryParse(responseCode, out int code)) ? code:(int)HttpStatusCode.OK;
+                    context.Response.StatusCode = !string.IsNullOrEmpty(responseCode) && int.TryParse(responseCode, out int code) ? code : (int)HttpStatusCode.OK;
                     context.Response.OutputStream.Flush();
                 }
                 catch (Exception ex)
@@ -336,20 +336,20 @@
             this._serverThread = new Thread(this.Listen);
             this._serverThread.Start();
         }
-        private static HttpClient client { set; get; }
+
         public static HttpResponseMessage SendAsync(
             HttpRequestMessage request,
             string method,
             string remote,
-            Action<string, string, string, HttpRequestMessage, Exception> requestInfoOnRewritingException=null,
-            Action<string, string,  HttpRequestMessage, HttpResponseMessage, Exception, string> requestInfoOnRespondingFromRemoteServer=null)
+            Action<string, string, string, HttpRequestMessage, Exception> requestInfoOnRewritingException = null,
+            Action<string, string, HttpRequestMessage, HttpResponseMessage, Exception, string> requestInfoOnRespondingFromRemoteServer = null)
         {
             try
             {
                 //todo using task run here now, but it needs to be refactored for performance
                 HttpResponseMessage response = Task.Run(() => client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Result;
 
-                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, response, null, "Request succeeded");
+                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, response, null, "Request succeeded");
                 response.Headers.Via.Add(new ViaHeaderValue("1.1", "ServeMeProxy", "http"));
                 //same again clear out due to protocol violation
                 if (request.Method == HttpMethod.Head)
@@ -363,7 +363,7 @@
                 if (e.InnerException != null)
                     errorMessage += " - " + e.InnerException.Message;
 
-                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, null, e, "Request failed");
+                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, null, e, "Request failed");
                 return new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.BadGateway,
@@ -375,7 +375,7 @@
                 // For instance, on some OSes, .NET Core doesn't yet
                 // support ServerCertificateCustomValidationCallback
 
-                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, null, e, "Sorry, your system does not support the requested feature.");
+                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, null, e, "Sorry, your system does not support the requested feature.");
                 return new HttpResponseMessage
                 {
                     StatusCode = 0,
@@ -384,7 +384,7 @@
             }
             catch (TaskCanceledException e)
             {
-                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, null, e, " The request timed out, the endpoint might be unreachable.");
+                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, null, e, " The request timed out, the endpoint might be unreachable.");
 
                 return new HttpResponseMessage
                 {
@@ -401,11 +401,12 @@
                     message += ':' + ex.InnerException.Message;
                 response.Content = new StringContent(message);
                 Trace.TraceError("Error:{0}", message);
-                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, response, ex, "Request failed");
+                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, response, ex, "Request failed");
                 return response;
             }
         }
-        private static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
+
+        static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
         {
             var method = new HttpMethod(requestInfo.HttpMethod);
 
@@ -434,6 +435,9 @@
                     request.Headers.Add(key, requestInfo.Headers[key]);
                 }
 
+            if (request.Headers.Contains("Host"))
+                request.Headers.Remove("Host");
+            request.Headers.Add("Host", request.RequestUri.DnsSafeHost);
             return request;
         }
     }
