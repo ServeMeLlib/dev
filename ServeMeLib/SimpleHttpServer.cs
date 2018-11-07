@@ -4,13 +4,17 @@
     // https://aksakalli.github.io/2014/02/24/simple-http-server-with-csparp.html
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Net.Sockets;
     using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using System.Threading.Tasks;
 
     class SimpleHttpServer
     {
@@ -100,29 +104,28 @@
 
         Thread _serverThread;
 
-        /// <summary>
-        ///     Construct server with given port.
-        /// </summary>
-        /// <param name="path">Directory path to serve.</param>
-        /// <param name="port">Port of the server.</param>
-        public SimpleHttpServer(string path, int port)
-        {
-            this.Initialize(path, port);
-        }
 
         /// <summary>
         ///     Construct server with suitable port.
         /// </summary>
         /// <param name="path">Directory path to serve.</param>
-        public SimpleHttpServer(string path, ServeMe serveMe)
+        public SimpleHttpServer(string path, ServeMe serveMe, int? port=null)
         {
+            ServicePointManager.DefaultConnectionLimit = 100;
+            HttpClientHandler handler = new HttpClientHandler()
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+            };
+            client = new HttpClient(handler);
+
             this.ServerCsv = serveMe.ServerCsv;
-            //get an empty port
+            if (port == null) {//get an empty port
             var l = new TcpListener(IPAddress.Loopback, 0);
             l.Start();
-            int port = ((IPEndPoint)l.LocalEndpoint).Port;
-            l.Stop();
-            this.Initialize(path, port);
+             port = ((IPEndPoint)l.LocalEndpoint).Port;
+            l.Stop(); }
+            
+            this.Initialize(path, port.Value);
         }
 
         string ServerCsv { get; }
@@ -140,6 +143,7 @@
         {
             this._serverThread.Abort();
             this._listener.Stop();
+            client.Dispose();
         }
 
         void Listen()
@@ -148,15 +152,22 @@
             this._listener.Prefixes.Add("http://*:" + this._port.ToString() + "/");
             this._listener.Start();
             while (true)
+            {
+                HttpListenerContext context=null;
                 try
                 {
-                    HttpListenerContext context = this._listener.GetContext();
+                     context = this._listener.GetContext();
                     this.Process(context);
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex);
-                }
+                    if (context?.Response != null)
+                    {
+                   context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    context.Response.OutputStream?.Close();
+                    }
+                }}
         }
 
         void Process(HttpListenerContext context)
@@ -166,7 +177,7 @@
             filename = filename.Substring(1);
             string currentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
             string loc = currentPath + "\\server.csv";
-
+            string responseCode="";
             if (!string.IsNullOrEmpty(this.ServerCsv) || File.Exists(loc))
             {
                 string content = this.ServerCsv ?? File.ReadAllText(loc);
@@ -182,45 +193,86 @@
 
                     string from = parts[0].Trim();
 
-                    if (!new Regex(from).Match(context.Request.Url.PathAndQuery.ToLower().Trim()).Success)
-                        continue;
+                    var fromParts=from.Split(' ');
+                    //todo remove duplicate codes all over here
+                    if (fromParts.Length > 1 && !string.IsNullOrEmpty(fromParts[0]) && !string.IsNullOrEmpty(fromParts[1]))
+                    {
+                        from = fromParts[1].Trim();
+                        if ("exactly" == fromParts[0].Trim())
+                        {
+                            if (from!=context.Request.Url.PathAndQuery)
+                                continue;
+                        }
+                        else
+                        {
+                            if (!new Regex(from).Match(context.Request.Url.PathAndQuery.ToLower().Trim()).Success)
+                                continue;
+                        }
+                    }
+                    else
+                    {
+                        if (!new Regex(from).Match(context.Request.Url.PathAndQuery.ToLower().Trim()).Success)
+                            continue;
+                    }
+
+
+                   
 
                     string to = parts[1].Trim();
                     filename = to;
-
+                  var  expectedMethod = "GET";
                     if (parts.Length > 2)
                     {
-                        string expectedMethod = parts[2].Trim();
-                        if (!string.IsNullOrEmpty(expectedMethod))
-                            if (context.Request.HttpMethod.ToLower() != expectedMethod)
+                     
+                        if (!string.IsNullOrEmpty(parts[2].Trim()))
+                        {
+                            expectedMethod = parts[2].Trim().ToUpper();
+                            if (context.Request.HttpMethod.ToLower() != expectedMethod.ToLower())
                             {
                                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                                 context.Response.OutputStream.Close();
                                 return;
                             }
-                    }
-
-                    if (parts.Length > 3 || to.Contains("{"))
-                    {
-                        string responseCode = parts[3].Trim();
-                        if (!string.IsNullOrEmpty(responseCode))
-                        {
-                            int.TryParse(responseCode, out int code);
-                            context.Response.StatusCode = code;
                         }
+                    }
+                    
+                    if (parts.Length > 3 || 
+                        to.StartsWith("{") || to.StartsWith("[") ||
+                        to.StartsWith("http://") || to.StartsWith("https://")
+                        )
+                    {
+                         responseCode = parts[3].Trim();
+                       
 
-                        if (to.Contains("{"))
+                        if (to.StartsWith("http://") || to.StartsWith("https://"))
                         {
+                            //expectedMethod
+                           var response= SendAsync(ToHttpRequestMessage(context.Request,to), expectedMethod, to);
+                            context.Response.StatusCode = (int)response.StatusCode;
+                           var stringResponse= response.Content.ReadAsStringAsync().Result;
+                            context.Response.ContentType = response.Content.Headers.ContentType.MediaType;
+                            new MemoryStream(Encoding.Default.GetBytes(stringResponse)).WriteTo(context.Response.OutputStream);
+
+                            context.Response.OutputStream.Close();
+                            return;
+                        }
+                        if (to.StartsWith("{") || to.StartsWith("["))
+                        {
+                            if (!string.IsNullOrEmpty(responseCode))
+                            {
+                                int.TryParse(responseCode, out int code);
+                                context.Response.StatusCode = code;
+                            }
                             string responseData = to.Trim();
                             if (!string.IsNullOrEmpty(responseData))
                             {
                                 context.Response.ContentType = "application/json";
                                 new MemoryStream(Encoding.Default.GetBytes(responseData)).WriteTo(context.Response.OutputStream);
                             }
+                            context.Response.OutputStream.Close();
+                            return;
                         }
-
-                        context.Response.OutputStream.Close();
-                        return;
+                        
                     }
 
                     break;
@@ -264,7 +316,7 @@
                         context.Response.OutputStream.Write(buffer, 0, nbytes);
                     input.Close();
 
-                    context.Response.StatusCode = (int)HttpStatusCode.OK;
+                    context.Response.StatusCode = (!string.IsNullOrEmpty(responseCode) && int.TryParse(responseCode, out int code)) ? code:(int)HttpStatusCode.OK;
                     context.Response.OutputStream.Flush();
                 }
                 catch (Exception ex)
@@ -283,6 +335,106 @@
             this._port = port;
             this._serverThread = new Thread(this.Listen);
             this._serverThread.Start();
+        }
+        private static HttpClient client { set; get; }
+        public static HttpResponseMessage SendAsync(
+            HttpRequestMessage request,
+            string method,
+            string remote,
+            Action<string, string, string, HttpRequestMessage, Exception> requestInfoOnRewritingException=null,
+            Action<string, string,  HttpRequestMessage, HttpResponseMessage, Exception, string> requestInfoOnRespondingFromRemoteServer=null)
+        {
+            try
+            {
+                //todo using task run here now, but it needs to be refactored for performance
+                HttpResponseMessage response = Task.Run(() => client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Result;
+
+                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, response, null, "Request succeeded");
+                response.Headers.Via.Add(new ViaHeaderValue("1.1", "ServeMeProxy", "http"));
+                //same again clear out due to protocol violation
+                if (request.Method == HttpMethod.Head)
+                    response.Content = null;
+
+                return response;
+            }
+            catch (HttpRequestException e)
+            {
+                string errorMessage = e.Message;
+                if (e.InnerException != null)
+                    errorMessage += " - " + e.InnerException.Message;
+
+                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, null, e, "Request failed");
+                return new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.BadGateway,
+                    Content = new StringContent(errorMessage)
+                };
+            }
+            catch (PlatformNotSupportedException e)
+            {
+                // For instance, on some OSes, .NET Core doesn't yet
+                // support ServerCertificateCustomValidationCallback
+
+                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, null, e, "Sorry, your system does not support the requested feature.");
+                return new HttpResponseMessage
+                {
+                    StatusCode = 0,
+                    Content = new StringContent(e.Message)
+                };
+            }
+            catch (TaskCanceledException e)
+            {
+                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, null, e, " The request timed out, the endpoint might be unreachable.");
+
+                return new HttpResponseMessage
+                {
+                    StatusCode = 0,
+                    Content = new StringContent(e.Message + " The endpoint might be unreachable.")
+                };
+            }
+            catch (Exception ex)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.InternalServerError);
+                //context.Response.StatusCode = (int)response.StatusCode;
+                string message = ex.Message;
+                if (ex.InnerException != null)
+                    message += ':' + ex.InnerException.Message;
+                response.Content = new StringContent(message);
+                Trace.TraceError("Error:{0}", message);
+                requestInfoOnRespondingFromRemoteServer?.Invoke( remote, method, request, response, ex, "Request failed");
+                return response;
+            }
+        }
+        private static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
+        {
+            var method = new HttpMethod(requestInfo.HttpMethod);
+
+            var request = new HttpRequestMessage(method, RewriteToUrl);
+
+            //have to explicitly null it to avoid protocol violation
+            if (request.Method == HttpMethod.Get || request.Method == HttpMethod.Trace) request.Content = null;
+
+            //now check if the request came from our secure listener then outgoing needs to be secure
+            if (request.Headers.Contains("X-Forward-Secure"))
+            {
+                request.RequestUri = new UriBuilder(request.RequestUri) { Scheme = Uri.UriSchemeHttps, Port = -1 }.Uri;
+                request.Headers.Remove("X-Forward-Secure");
+            }
+
+            string clientIp = "127.0.0.1";
+            request.Headers.Add("X-Forwarded-For", clientIp);
+            if (requestInfo.UrlReferrer?.ToString() != null)
+                requestInfo.Headers.Add("Referer", requestInfo.UrlReferrer.ToString());
+
+            foreach (string key in requestInfo.Headers)
+                if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(requestInfo.Headers[key]))
+                {
+                    if (request.Headers.Contains(key))
+                        request.Headers.Remove(key);
+                    request.Headers.Add(key, requestInfo.Headers[key]);
+                }
+
+            return request;
         }
     }
 }

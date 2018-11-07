@@ -9,6 +9,21 @@
     public class UnitTest1
     {
         [TestMethod]
+        public void TestMethod()
+        {
+            
+            string serverCsv = @"getSome,http://www.google.com,get,200";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                var finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("http"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
         public void TestMethod1()
         {
             string serverCsv = @"getSome,{'ya':1},get,200";
