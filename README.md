@@ -1,5 +1,5 @@
 # ServeMe
-Simple server for testing (Mocking) back-end service
+Simple server for testing ( and mocking) back-end service
 
 
 Simply drop it in a folder whose content you want to serve. It's just one exe file 
