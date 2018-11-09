@@ -73,5 +73,174 @@
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
         }
+
+        [TestMethod]
+        public void TestMethod5()
+        {
+            string serverCsv = @"equalto /getSome,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod6()
+        {
+            string serverCsv = @"contains so,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod7()
+        {
+            string serverCsv = @"startswith /g,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod8()
+        {
+            string serverCsv = @"endswith me,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod71()
+        {
+            string serverCsv = @"contains /g,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod81()
+        {
+            string serverCsv = @"contains me,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod9()
+        {
+            string serverCsv = @"regex \/getSome,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod5_not()
+        {
+            string serverCsv = @"!equalto getSome,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod6_not()
+        {
+            string serverCsv = @"!contains us,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod7_not()
+        {
+            string serverCsv = @"!startswith me,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod8_not()
+        {
+            string serverCsv = @"!endswith /ge,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod9_not()
+        {
+            string serverCsv = @"!regex /getSome(d),{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void TestMethod99()
+        {
+            string serverCsv = @"regex (.*)me,{'ya':2},post," + (int)HttpStatusCode.Accepted;
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Post();
+                Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
+            }
+        }
     }
 }

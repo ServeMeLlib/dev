@@ -200,23 +200,80 @@
 
                     string[] fromParts = from.Split(' ');
                     //todo remove duplicate codes all over here
-                    if (fromParts.Length > 1 && !string.IsNullOrEmpty(fromParts[0]) && !string.IsNullOrEmpty(fromParts[1]))
+
+                    string descriptor = "regex";
+                    bool hasDescriptor = fromParts.Length > 1 &&
+                        !string.IsNullOrEmpty(fromParts[0].Trim()) &&
+                        !string.IsNullOrEmpty(fromParts[1].Trim());
+                    if (hasDescriptor)
                     {
                         from = fromParts[1].Trim();
-                        if ("exactly" == fromParts[0].Trim())
+                        descriptor = fromParts[0].Trim();
+                    }
+
+                    switch (descriptor)
+                    {
+                        case "equalto":
                         {
                             if (from != context.Request.Url.PathAndQuery.ToLower())
                                 continue;
+                            break;
                         }
-                        else
+                        case "!equalto":
+                        {
+                            if (from == context.Request.Url.PathAndQuery.ToLower())
+                                continue;
+                            break;
+                        }
+                        case "contains":
+                        {
+                            if (!context.Request.Url.PathAndQuery.ToLower().Contains(from))
+                                continue;
+                            break;
+                        }
+                        case "!contains":
+                        {
+                            if (context.Request.Url.PathAndQuery.ToLower().Contains(from))
+                                continue;
+                            break;
+                        }
+                        case "startswith":
+                        {
+                            if (!context.Request.Url.PathAndQuery.ToLower().StartsWith(from))
+                                continue;
+                            break;
+                        }
+                        case "!startswith":
+                        {
+                            if (context.Request.Url.PathAndQuery.ToLower().StartsWith(from))
+                                continue;
+                            break;
+                        }
+                        case "endswith":
+                        {
+                            if (!context.Request.Url.PathAndQuery.ToLower().EndsWith(from))
+                                continue;
+                            break;
+                        }
+                        case "!endswith":
+                        {
+                            if (context.Request.Url.PathAndQuery.ToLower().EndsWith(from))
+                                continue;
+                            break;
+                        }
+                        case "regex":
                         {
                             if (!new Regex(from).Match(context.Request.Url.PathAndQuery.ToLower().Trim()).Success)
                                 continue;
+                            break;
                         }
-                    }
-                    else
-                    {
-                        if (!new Regex(from).Match(context.Request.Url.PathAndQuery.ToLower().Trim()).Success)
+                        case "!regex":
+                        {
+                            if (new Regex(from).Match(context.Request.Url.PathAndQuery.ToLower().Trim()).Success)
+                                continue;
+                            break;
+                        }
+                        default:
                             continue;
                     }
 
