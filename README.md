@@ -7,6 +7,7 @@ Simply drop it in a folder whose content you want to serve. It's just one exe fi
 ----
 
 Download the lattest release here https://github.com/ServeMeLlib/dev/releases or get it from nuget 
+
 [![NuGet version](https://badge.fury.io/nu/serveme.svg)](https://badge.fury.io/nu/serveme)
 
 
@@ -52,10 +53,35 @@ Another example, to return {'orderId':'1001'}  when only POST /UpdateOrder, matc
 
 `exactly /UpdateOrder ,  {'orderId':'1001'} , POST`
 
-Another example, to return http://www.google.com content  when only GET /google, matching the path and query exactly , then server.csv will contain 
+Another example, to return http://www.google.com content  when only GET /google, matching the path and query exactly(not case sensitive) , then server.csv will contain
 
-`exactly /google ,  http://www.google.com , GET`
-      
+`equalto /google ,  http://www.google.com , GET`
+ 
+Another example, to return http://www.google.com content  when only GET and the path and query ends with /google (not case sensitive) , then server.csv will contain 
+
+`EndsWith /google ,  http://www.google.com , GET`     
+
+Another example, to return http://www.google.com content  when only GET and the path and query starts with /google (not case sensitive) , then server.csv will contain 
+
+`StartsWith /google ,  http://www.google.com , GET` 
+ 
+Another example, to return http://www.google.com content  when only GET and the path and query contains /google (not case sensitive) , then server.csv will contain 
+
+`Contains /google ,  http://www.google.com , GET` 
+
+Another example, to return http://www.google.com content  when only GET and the path and query matches using regular expression with /go(.*) (not case sensitive) , then server.csv will contain 
+
+`Regex /go(.*)  ,  http://www.google.com , GET` 
+
+In order to negate any of the above, simply add ! prefix. For example,
+to return http://www.google.com content  when only GET and the path and query does NOT start with /google (not case sensitive) , then server.csv will contain 
+
+`!StartsWith /google ,  http://www.google.com , GET` 
+
+ Notice the '!' prefix
+
+----Please note that the default is `equalto` when ever nothing is specified
+
 ----
 This is how a sample server.csv looks like https://github.com/ServeMeLlib/dev/blob/master/server.csv
 ----
