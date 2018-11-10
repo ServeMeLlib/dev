@@ -51,7 +51,7 @@ Another example, to return a 404  when only GET /AllData , then server.csv will 
 
 Another example, to return {'orderId':'1001'}  when only POST /UpdateOrder, matching the path and query exactly , then server.csv will contain 
 
-`exactly /UpdateOrder ,  {'orderId':'1001'} , POST`
+`equalto /UpdateOrder ,  {'orderId':'1001'} , POST`
 
 Another example, to return http://www.google.com content  when only GET /google, matching the path and query exactly(not case sensitive) , then server.csv will contain
 
