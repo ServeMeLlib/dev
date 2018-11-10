@@ -35,19 +35,19 @@ Note : that you can use regular expressions to pattern match the PathAndQuery !
 
 For example, to return content or orders.json when GET or POST /GetOrders , then server.csv will contain 
 
-`GetOrders , orders.json`
+`/GetOrders , orders.json`
 
 Another example, to return content or orders.json when only GET /GetOrders , then server.csv will contain 
 
-`GetOrders , orders.json , get`
+`/GetOrders , orders.json , get`
 
 Another example, to return {'orderId':'1001'}  when only POST /UpdateOrder , then server.csv will contain 
 
-`UpdateOrder ,  {'orderId':'1001'} , POST`
+`/UpdateOrder ,  {'orderId':'1001'} , POST`
 
 Another example, to return a 404  when only GET /AllData , then server.csv will contain 
 
-`UpdateOrder ,  {} , GET , 404`
+`/UpdateOrder ,  {} , GET , 404`
 
 Another example, to return {'orderId':'1001'}  when only POST /UpdateOrder, matching the path and query exactly , then server.csv will contain 
 
