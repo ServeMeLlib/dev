@@ -1,6 +1,5 @@
-/GetOrders , orders.json , ,
-/GetOrders2 , orders.json , get ,
-/UpdateOrder , {'orderId':'1001'} , POST ,
-/m2 , {'ya':1} , get , 200
-/UpdateOrder ,  {} , GET , 404
-
+GetOrders , orders.json , ,
+regex GetOrders2 , orders.json , get ,
+contains UpdateOrder , {'orderId':'1001'} , POST ,
+startswith /m2 , {'ya':1} , get , 200
+endswith UpdateOrder ,  {} , GET , 404
