@@ -11,16 +11,16 @@
     public class ServeMe : IDisposable
     {
         public static readonly string CurrentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
-        private readonly string ServerFileName = CurrentPath + "\\server.csv";
+
+        readonly object padlock = new object();
+        readonly string ServerFileName = CurrentPath + "\\server.csv";
 
         internal Func<string, bool> FileExists = fn => File.Exists(fn);
-
-        private readonly object padlock = new object();
         internal Func<string, string> ReadAllTextFromFile = fn => File.ReadAllText(fn);
 
         internal string ServerCsv { set; get; }
 
-        private SimpleHttpServer MyServer { get; set; }
+        SimpleHttpServer MyServer { get; set; }
 
         public void Dispose()
         {
@@ -45,7 +45,7 @@
             return string.Empty;
         }
 
-        private int ExtractFromSettings(string match, string content, out string[] args)
+        int ExtractFromSettings(string match, string content, out string[] args)
         {
             match = match.ToLower().Trim();
 
@@ -72,7 +72,7 @@
             return 0;
         }
 
-        private int ExtractFromSettings(string match, out string[] args)
+        int ExtractFromSettings(string match, out string[] args)
         {
             match = match.ToLower().Trim();
             string content = this.GetSeUpContent().ToLower().Trim();
@@ -135,6 +135,7 @@
 
             return false;
         }
+
         //https://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
         bool PortInUse(int port)
         {
@@ -143,33 +144,30 @@
             TcpConnectionInformation[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpConnections();
 
             foreach (TcpConnectionInformation tcpi in tcpConnInfoArray)
-            {
                 if (tcpi.LocalEndPoint.Port == port)
                 {
                     isAvailable = false;
                     break;
                 }
-            }
 
             return isAvailable;
         }
+
         internal int? GetPortNumberFromSettings()
         {
             string[] data;
             if (this.ExtractFromSettings("app port", out data) == 2)
             {
-                var port= int.Parse(data[1]);
-                if (PortInUse(port))
-                {
+                int port = int.Parse(data[1]);
+                if (this.PortInUse(port))
                     throw new Exception($"Port {port} in setting is in use");
-                }
                 return port;
             }
 
             return null;
         }
 
-        public List<string> Start(string directory = null, string serverCsv = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null)
+        public List<string> Start(string serverCsv = null, int? port = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null)
         {
             this.FileExists = fileExists ?? this.FileExists;
             this.ReadAllTextFromFile = readAllTextFromFile ?? this.ReadAllTextFromFile;
@@ -178,7 +176,7 @@
 
             try
             {
-                this.MyServer = new SimpleHttpServer(directory ?? Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory()), this, GetPortNumberFromSettings());
+                this.MyServer = new SimpleHttpServer(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory()), this, port ?? this.GetPortNumberFromSettings());
 
                 Console.WriteLine("Serving!");
                 Console.WriteLine("");
