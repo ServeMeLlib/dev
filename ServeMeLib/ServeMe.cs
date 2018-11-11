@@ -4,22 +4,23 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Net.NetworkInformation;
     using System.Net.Sockets;
     using System.Reflection;
 
     public class ServeMe : IDisposable
     {
         public static readonly string CurrentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
-        readonly string ServerFileName = CurrentPath + "\\server.csv";
+        private readonly string ServerFileName = CurrentPath + "\\server.csv";
 
         internal Func<string, bool> FileExists = fn => File.Exists(fn);
 
-        readonly object padlock = new object();
+        private readonly object padlock = new object();
         internal Func<string, string> ReadAllTextFromFile = fn => File.ReadAllText(fn);
 
         internal string ServerCsv { set; get; }
 
-        SimpleHttpServer MyServer { get; set; }
+        private SimpleHttpServer MyServer { get; set; }
 
         public void Dispose()
         {
@@ -44,7 +45,7 @@
             return string.Empty;
         }
 
-        int ExtractFromSettings(string match, string content, out string[] args)
+        private int ExtractFromSettings(string match, string content, out string[] args)
         {
             match = match.ToLower().Trim();
 
@@ -71,7 +72,7 @@
             return 0;
         }
 
-        int ExtractFromSettings(string match, out string[] args)
+        private int ExtractFromSettings(string match, out string[] args)
         {
             match = match.ToLower().Trim();
             string content = this.GetSeUpContent().ToLower().Trim();
@@ -134,6 +135,39 @@
 
             return false;
         }
+        //https://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
+        bool PortInUse(int port)
+        {
+            bool isAvailable = true;
+            IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
+            TcpConnectionInformation[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpConnections();
+
+            foreach (TcpConnectionInformation tcpi in tcpConnInfoArray)
+            {
+                if (tcpi.LocalEndPoint.Port == port)
+                {
+                    isAvailable = false;
+                    break;
+                }
+            }
+
+            return isAvailable;
+        }
+        internal int? GetPortNumberFromSettings()
+        {
+            string[] data;
+            if (this.ExtractFromSettings("app port", out data) == 2)
+            {
+                var port= int.Parse(data[1]);
+                if (PortInUse(port))
+                {
+                    throw new Exception($"Port {port} in setting is in use");
+                }
+                return port;
+            }
+
+            return null;
+        }
 
         public List<string> Start(string directory = null, string serverCsv = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null)
         {
@@ -141,71 +175,81 @@
             this.ReadAllTextFromFile = readAllTextFromFile ?? this.ReadAllTextFromFile;
             this.ServerCsv = serverCsv;
             var endpoints = new List<string>();
-            this.MyServer = new SimpleHttpServer(directory ?? Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory()), this);
-            Console.WriteLine("Serving!");
-            Console.WriteLine("");
-            Console.WriteLine("If you are using server.csv then note that the csv format is :");
-            Console.WriteLine("[ pathAndQuery , some.json , httpMethod  , responseCode ]");
-            Console.WriteLine("");
-            Console.WriteLine("For example, to return content or orders.json when GET or POST /GetOrders do ");
-            Console.WriteLine("GetOrders , orders.json");
-            Console.WriteLine("");
-            Console.WriteLine("Another example, to return content or orders.json when only GET /GetOrders do ");
-            Console.WriteLine("GetOrders , orders.json , get ");
-            Console.WriteLine("");
-            Console.WriteLine("Another example, to return {'orderId':'1001'}  when only POST /UpdateOrder do ");
-            Console.WriteLine("UpdateOrder ,  {'orderId':'1001'} , POST");
-            Console.WriteLine("");
-            Console.WriteLine("Another example, to return a 404  when only GET /AllData do ");
-            Console.WriteLine("UpdateOrder ,  {} , GET , 404");
-            Console.WriteLine("");
 
-            Console.WriteLine("Another example, to return http://www.google.com content when only GET /google, matching the path and query exactly(not case sensitive) , then server.csv will contain ");
-            Console.WriteLine("equalto /google , http://www.google.com , GET");
-            Console.WriteLine("");
+            try
+            {
+                this.MyServer = new SimpleHttpServer(directory ?? Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory()), this, GetPortNumberFromSettings());
 
-            Console.WriteLine("Another example, to return http://www.google.com content when only GET and the path and query ends with /google (not case sensitive) , then server.csv will contain");
-            Console.WriteLine("EndsWith /google , http://www.google.com , GET");
-            Console.WriteLine("");
+                Console.WriteLine("Serving!");
+                Console.WriteLine("");
+                Console.WriteLine("If you are using server.csv then note that the csv format is :");
+                Console.WriteLine("[ pathAndQuery , some.json , httpMethod  , responseCode ]");
+                Console.WriteLine("");
+                Console.WriteLine("For example, to return content or orders.json when GET or POST /GetOrders do ");
+                Console.WriteLine("GetOrders , orders.json");
+                Console.WriteLine("");
+                Console.WriteLine("Another example, to return content or orders.json when only GET /GetOrders do ");
+                Console.WriteLine("GetOrders , orders.json , get ");
+                Console.WriteLine("");
+                Console.WriteLine("Another example, to return {'orderId':'1001'}  when only POST /UpdateOrder do ");
+                Console.WriteLine("UpdateOrder ,  {'orderId':'1001'} , POST");
+                Console.WriteLine("");
+                Console.WriteLine("Another example, to return a 404  when only GET /AllData do ");
+                Console.WriteLine("UpdateOrder ,  {} , GET , 404");
+                Console.WriteLine("");
 
-            Console.WriteLine("To have ServeMe locate your settings file from another location, do ");
-            Console.WriteLine("app LoadSettingsFromFile, c:/settings.csv");
-            Console.WriteLine("");
+                Console.WriteLine("Another example, to return http://www.google.com content when only GET /google, matching the path and query exactly(not case sensitive) , then server.csv will contain ");
+                Console.WriteLine("equalto /google , http://www.google.com , GET");
+                Console.WriteLine("");
 
-            Console.WriteLine("To enable logging do ");
-            Console.WriteLine("app log, c:/log.txt");
-            Console.WriteLine("");
+                Console.WriteLine("Another example, to return http://www.google.com content when only GET and the path and query ends with /google (not case sensitive) , then server.csv will contain");
+                Console.WriteLine("EndsWith /google , http://www.google.com , GET");
+                Console.WriteLine("");
 
-            Console.WriteLine("This will enable logging to console");
-            Console.WriteLine("app log");
-            Console.WriteLine("");
+                Console.WriteLine("To have ServeMe locate your settings file from another location, do ");
+                Console.WriteLine("app LoadSettingsFromFile, c:/settings.csv");
+                Console.WriteLine("");
 
-            Console.WriteLine("To open default browser when app starts do");
-            Console.WriteLine("app openDefaultBrowserOnStartUp");
-            Console.WriteLine("");
+                Console.WriteLine("To enable logging do ");
+                Console.WriteLine("app log, c:/log.txt");
+                Console.WriteLine("");
 
-            Console.WriteLine("For more examples checkout ");
-            Console.WriteLine("https://github.com/ServeMeLlib/dev");
-            Console.WriteLine("");
+                Console.WriteLine("This will enable logging to console");
+                Console.WriteLine("app log");
+                Console.WriteLine("");
 
-            Console.WriteLine("You can access your server through any of the following endpoints :");
-            Console.WriteLine("");
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.ForegroundColor = ConsoleColor.Green;
-            endpoints.Add("http://localhost:" + this.MyServer.Port);
-            endpoints.Add("http://127.0.0.1:" + this.MyServer.Port);
-            Console.WriteLine("- Local: " + "http://localhost:" + this.MyServer.Port);
-            Console.WriteLine("- Local: " + "http://127.0.0.1:" + this.MyServer.Port);
-            IPAddress[] localIPs = Dns.GetHostAddresses(Dns.GetHostName());
-            foreach (IPAddress addr in localIPs)
-                if (addr.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    endpoints.Add($"http://{addr}:" + this.MyServer.Port);
-                    Console.WriteLine($"- On your network: http://{addr}:" + this.MyServer.Port);
-                }
+                Console.WriteLine("To open default browser when app starts do");
+                Console.WriteLine("app openDefaultBrowserOnStartUp");
+                Console.WriteLine("");
 
-            Console.WriteLine("");
-            return endpoints;
+                Console.WriteLine("For more examples checkout ");
+                Console.WriteLine("https://github.com/ServeMeLlib/dev");
+                Console.WriteLine("");
+
+                Console.WriteLine("You can access your server through any of the following endpoints :");
+                Console.WriteLine("");
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.Green;
+                endpoints.Add("http://localhost:" + this.MyServer.Port);
+                endpoints.Add("http://127.0.0.1:" + this.MyServer.Port);
+                Console.WriteLine("- Local: " + "http://localhost:" + this.MyServer.Port);
+                Console.WriteLine("- Local: " + "http://127.0.0.1:" + this.MyServer.Port);
+                IPAddress[] localIPs = Dns.GetHostAddresses(Dns.GetHostName());
+                foreach (IPAddress addr in localIPs)
+                    if (addr.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        endpoints.Add($"http://{addr}:" + this.MyServer.Port);
+                        Console.WriteLine($"- On your network: http://{addr}:" + this.MyServer.Port);
+                    }
+
+                Console.WriteLine("");
+                return endpoints;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return new List<string>();
+            }
         }
     }
 }
