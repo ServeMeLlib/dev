@@ -344,9 +344,15 @@
 
                             this.ServeMe.Log($"Found matching setting : {s}", $"Making external call to {to}");
 
+                            var request = ToHttpRequestMessage(context.Request, to);
+
+                            //todo use basic wuth
+                           // request.Headers.Authorization =
+                            //    new AuthenticationHeaderValue("Basic",Convert.ToBase64String(ASCII.GetBytes($"{"yourusername"}:{"yourpwd"}")));
+
 
                             //expectedMethod
-                            HttpResponseMessage response = this.SendAsync(ToHttpRequestMessage(context.Request, to), expectedMethod, to);
+                            HttpResponseMessage response = this.SendAsync(request, expectedMethod, to);
 
 
                             this.ServeMe.Log($"Get {response.StatusCode} response from call to {to} ");
