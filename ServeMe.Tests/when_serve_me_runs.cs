@@ -10,6 +10,34 @@
     public class when_serve_me_runs
     {
         [TestMethod]
+        public void it_can_connect_with_cookie_auth()
+        {
+            string serverCsv = @"getSome,http://www.google.com auth cookie MYCOOKIE MYOHMYOHMY,get";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void it_can_connect_with_basic_auth()
+        {
+            string serverCsv = @"getSome,http://www.google.com auth basic Sam@me.com password%*!,get";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
         public void it_can_return_external_network_resource_with_get_and_ok_status_code()
         {
             string serverCsv = @"getSome,http://www.google.com,get,200";
@@ -22,6 +50,7 @@
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
+
         [TestMethod]
         public void it_can_write_response_to_file()
         {
@@ -29,9 +58,7 @@
             using (var serveMe = new ServeMe())
             {
                 if (File.Exists("data.json"))
-                {
                     File.Delete("data.json");
-                }
                 Assert.IsFalse(File.Exists("data.json"));
 
                 string url = serveMe.Start(serverCsv).First();
@@ -42,9 +69,7 @@
                 Assert.IsTrue(File.Exists("data.json"));
                 Assert.IsTrue(File.ReadAllText("data.json").StartsWith("<!doc"));
                 if (File.Exists("data.json"))
-                {
                     File.Delete("data.json");
-                }
                 Assert.IsFalse(File.Exists("data.json"));
             }
         }

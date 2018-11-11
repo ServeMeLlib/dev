@@ -18,6 +18,8 @@
         internal Func<string, bool> FileExists = fn => File.Exists(fn);
         internal Func<string, string> ReadAllTextFromFile = fn => File.ReadAllText(fn);
 
+        internal Action<string, string> WriteAllTextToFile = (fn, txt) => File.WriteAllText(fn, txt);
+
         internal string ServerCsv { set; get; }
 
         SimpleHttpServer MyServer { get; set; }
@@ -167,7 +169,6 @@
             return null;
         }
 
-        internal Action<string, string> WriteAllTextToFile = (fn, txt) => File.WriteAllText(fn,txt);
         public List<string> Start(string serverCsv = null, int? port = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null, Action<string, string> writeAllTextToFile = null)
         {
             this.FileExists = fileExists ?? this.FileExists;

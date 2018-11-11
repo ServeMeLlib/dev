@@ -15,9 +15,9 @@
     using System.Threading;
     using System.Threading.Tasks;
 
-    class SimpleHttpServer
+    internal class SimpleHttpServer
     {
-        static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+        private static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
             #region extension to MIME type list
 
@@ -89,7 +89,7 @@
             #endregion extension to MIME type list
         };
 
-        readonly string[] _indexFiles =
+        private readonly string[] _indexFiles =
         {
             "index.html",
             "index.htm",
@@ -97,11 +97,13 @@
             "default.htm"
         };
 
-        HttpListener _listener;
-        int _port;
-        string _rootDirectory;
+        private HttpListener _listener;
+        private int _port;
+        private string _rootDirectory;
 
-        Thread _serverThread;
+        private Thread _serverThread;
+
+        public object PadLock = new object();
 
         /// <summary>
         ///     Construct server with suitable port.
@@ -130,7 +132,7 @@
             this.Initialize(path, port.Value);
         }
 
-        ServeMe ServeMe { get; }
+        private ServeMe ServeMe { get; }
 
         public int Port
         {
@@ -138,7 +140,7 @@
             private set { }
         }
 
-        static HttpClient client { set; get; }
+        private static HttpClient client { set; get; }
 
         /// <summary>
         ///     Stop server and dispose all functions.
@@ -151,7 +153,7 @@
             client.Dispose();
         }
 
-        void Listen()
+        private void Listen()
         {
             this._listener = new HttpListener();
             this._listener.Prefixes.Add("http://*:" + this._port.ToString() + "/");
@@ -179,7 +181,7 @@
             }
         }
 
-        void Process(HttpListenerContext context)
+        private void Process(HttpListenerContext context)
         {
             string filename = context.Request.Url.AbsolutePath;
 
@@ -198,11 +200,11 @@
                     if (string.IsNullOrEmpty(s))
                         continue;
 
-                    string[] parts = s.ToLower().Split(',');
+                    string[] parts = s.Split(',');
                     if (parts.Length < 2)
                         continue;
 
-                    string from = parts[0].Trim();
+                    string from = parts[0].ToLower().Trim();
 
                     string[] fromParts = from.Split(' ');
                     //todo remove duplicate codes all over here
@@ -217,97 +219,94 @@
                         descriptor = fromParts[0].Trim();
                     }
 
+                    string pathAndQuery = context.Request.Url.PathAndQuery.ToLower();
                     switch (descriptor)
                     {
                         case "equalto":
-                        {
-                            if (from != context.Request.Url.PathAndQuery.ToLower())
-                                continue;
-                            break;
-                        }
+                            {
+                                if (from != pathAndQuery)
+                                    continue;
+                                break;
+                            }
                         case "!equalto":
-                        {
-                            if (from == context.Request.Url.PathAndQuery.ToLower())
-                                continue;
-                            break;
-                        }
+                            {
+                                if (from == pathAndQuery)
+                                    continue;
+                                break;
+                            }
                         case "contains":
-                        {
-                            if (!context.Request.Url.PathAndQuery.ToLower().Contains(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!pathAndQuery.Contains(from))
+                                    continue;
+                                break;
+                            }
                         case "!contains":
-                        {
-                            if (context.Request.Url.PathAndQuery.ToLower().Contains(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (pathAndQuery.Contains(from))
+                                    continue;
+                                break;
+                            }
                         case "startswith":
-                        {
-                            if (!context.Request.Url.PathAndQuery.ToLower().StartsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!pathAndQuery.StartsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "!startswith":
-                        {
-                            if (context.Request.Url.PathAndQuery.ToLower().StartsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (pathAndQuery.StartsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "endswith":
-                        {
-                            if (!context.Request.Url.PathAndQuery.ToLower().EndsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!pathAndQuery.EndsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "!endswith":
-                        {
-                            if (context.Request.Url.PathAndQuery.ToLower().EndsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (pathAndQuery.EndsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "regex":
-                        {
-                            if (!new Regex(from).Match(context.Request.Url.PathAndQuery.ToLower().Trim()).Success)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                    continue;
+                                break;
+                            }
                         case "!regex":
-                        {
-                            if (new Regex(from).Match(context.Request.Url.PathAndQuery.ToLower().Trim()).Success)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                    continue;
+                                break;
+                            }
                         default:
                             continue;
                     }
 
-                   
-                    var toParts = System.Text.RegularExpressions.Regex.Split(parts[1], @"\s{1,}");
-                    string to = toParts[0].Trim();
+                    string[] toParts = Regex.Split(parts[1], @"\s{1,}");
+                    string to = toParts[0].Trim().ToLower();
                     string saveFile = null;
                     string authType = null;
                     string userName = null;
                     string password = null;
                     if (parts.Length > 4)
                     {
-                        var saveParts = System.Text.RegularExpressions.Regex.Split(parts[4], @"\s{1,}");
+                        string[] saveParts = Regex.Split(parts[4], @"\s{1,}");
                         if (saveParts[0].Trim().ToLower() == "save")
-                        {
                             saveFile = saveParts[1];
-                        }
                     }
+
                     if (toParts.Length > 3)
-                    {
                         if (toParts[1].Trim().ToLower() == "auth")
                         {
-                            authType = toParts[2];
+                            authType = toParts[2].ToLower().Trim();
                             userName = toParts[3];
                             password = toParts[4];
-                            
                         }
-                    }
+
                     filename = to;
                     string expectedMethod = "GET";
                     if (parts.Length > 2)
@@ -329,48 +328,75 @@
                     )
                     {
                         if (parts.Length > 3)
-                        {
                             responseCode = parts[3].Trim();
-                        }
                         else
-                        {
                             responseCode = "200";
-                        }
-                       
 
                         if (to.StartsWith("http://") || to.StartsWith("https://"))
                         {
-
-
                             this.ServeMe.Log($"Found matching setting : {s}", $"Making external call to {to}");
 
-                            var request = ToHttpRequestMessage(context.Request, to);
+                            HttpRequestMessage request = ToHttpRequestMessage(context.Request, to);
 
-                            //todo use basic wuth
-                           // request.Headers.Authorization =
-                            //    new AuthenticationHeaderValue("Basic",Convert.ToBase64String(ASCII.GetBytes($"{"yourusername"}:{"yourpwd"}")));
+                            if (authType != null)
+                            {
+                                if (authType == "basic")
+                                    request.Headers.Authorization =
+                                        new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.Default.GetBytes($"{userName}:{password}")));
+                                if (authType == "cookie")
+                                {
+                                    var clientCookie = new Cookie(userName, password);
+                                    clientCookie.Expires = DateTime.Now.AddDays(2);
+                                    clientCookie.Domain = request.RequestUri.Host;
+                                    clientCookie.Path = "/";
+                                    string cook = clientCookie.ToString();
+                                    request.Headers.Add("Cookie", cook + ";_ga=GA1.2.2066560216.1541104696");
+                                }
+                            }
 
-
+                            ServicePointManager.Expect100Continue = false;
+                            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                             //expectedMethod
                             HttpResponseMessage response = this.SendAsync(request, expectedMethod, to);
-
 
                             this.ServeMe.Log($"Get {response.StatusCode} response from call to {to} ");
 
                             context.Response.StatusCode = (int)response.StatusCode;
-                            string stringResponse = response.Content.ReadAsStringAsync().Result;
-
-                            if (saveFile != null)
-                            {
-                                this.ServeMe.Log($"Saving to file {saveFile}...");
-                                lock (PadLock)
-                                {
-                                  ServeMe.WriteAllTextToFile(saveFile,stringResponse);
-                                }
-                            }
-
                             context.Response.ContentType = response.Content.Headers.ContentType.MediaType;
-                            new MemoryStream(Encoding.Default.GetBytes(stringResponse)).WriteTo(context.Response.OutputStream);
+                            string mediaType = response.Content.Headers.ContentType.MediaType.ToLower();
+                            if (mediaType.Contains("text") || mediaType.Contains("json"))
+                            {
+                                string stringResponse = response.Content.ReadAsStringAsync().Result;
+                                if (!string.IsNullOrEmpty(saveFile))
+                                {
+                                    this.ServeMe.Log($"Saving to file {saveFile}...");
+                                    lock (this.PadLock)
+                                    {
+                                        this.ServeMe.WriteAllTextToFile(saveFile, stringResponse);
+                                    }
+                                }
+
+                                new MemoryStream(Encoding.Default.GetBytes(stringResponse)).WriteTo(context.Response.OutputStream);
+                            }
+                            else
+                            {
+                                HttpContent httpContent = response.Content;
+                                if (!string.IsNullOrEmpty(saveFile))
+                                    using (FileStream newFile = File.Create(saveFile))
+                                    {
+                                        this.ServeMe.Log($"Saving to file {saveFile}...");
+                                        lock (this.PadLock)
+                                        {
+                                            bool result = Task.Run(
+                                                async () =>
+                                                {
+                                                    Stream stream = await httpContent.ReadAsStreamAsync();
+                                                    await stream.CopyToAsync(newFile);
+                                                    return true;
+                                                }).Result;
+                                        }
+                                    }
+                            }
 
                             context.Response.OutputStream.Close();
                             return;
@@ -458,9 +484,7 @@
             context.Response.OutputStream.Close();
         }
 
-        public object PadLock =new object();
-
-        void Initialize(string path, int port)
+        private void Initialize(string path, int port)
         {
             this._rootDirectory = path;
             this._port = port;
@@ -537,7 +561,7 @@
             }
         }
 
-        static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
+        private static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
         {
             var method = new HttpMethod(requestInfo.HttpMethod);
 
