@@ -1,6 +1,7 @@
 ﻿namespace ServeMeLib
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
     using System.Security.Principal;
@@ -14,8 +15,13 @@
             else
                 using (var server = new ServeMe())
                 {
-                    server.Start();
+                    List<string> urls = server.Start();
+                    if (server.CanOpenDefaultBrowserOnStart())
+                        Process.Start(urls[0]);
+
                     Console.ForegroundColor = ConsoleColor.White;
+
+                    server.Log("ServeMe started successfully");
                     do
                     {
                         Console.WriteLine("Enter 'e' window to exit");

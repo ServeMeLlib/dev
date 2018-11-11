@@ -10,7 +10,6 @@
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Net.Sockets;
-    using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
@@ -117,7 +116,7 @@
             };
             client = new HttpClient(handler);
 
-            this.ServerCsv = serveMe.ServerCsv;
+            this.ServeMe = serveMe;
             if (port == null)
             {
                 //get an empty port
@@ -127,10 +126,11 @@
                 l.Stop();
             }
 
+            this.ServeMe.Log($"Using port {port}");
             this.Initialize(path, port.Value);
         }
 
-        string ServerCsv { get; }
+        ServeMe ServeMe { get; }
 
         public int Port
         {
@@ -145,6 +145,7 @@
         /// </summary>
         public void Stop()
         {
+            this.ServeMe.Log("Stopping server ...");
             this._serverThread.Abort();
             this._listener.Stop();
             client.Dispose();
@@ -154,7 +155,9 @@
         {
             this._listener = new HttpListener();
             this._listener.Prefixes.Add("http://*:" + this._port.ToString() + "/");
+            this.ServeMe.Log($"About to start listening on port {this._port}");
             this._listener.Start();
+            this.ServeMe.Log($"Now listening on port {this._port}");
             while (true)
             {
                 HttpListenerContext context = null;
@@ -165,7 +168,8 @@
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    this.ServeMe.Log(ex.Message + " " + ex.InnerException?.Message);
+                    //Console.WriteLine(ex);
                     if (context?.Response != null)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
@@ -178,15 +182,17 @@
         void Process(HttpListenerContext context)
         {
             string filename = context.Request.Url.AbsolutePath;
+
+            this.ServeMe.Log($"Request with {context.Request.HttpMethod} {context.Request.Url} for resource {filename}");
+
             //Console.WriteLine(filename);
             filename = filename.Substring(1);
-            string currentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
-            string loc = currentPath + "\\server.csv";
-            string responseCode = "";
-            if (!string.IsNullOrEmpty(this.ServerCsv) || File.Exists(loc))
-            {
-                string content = this.ServerCsv ?? File.ReadAllText(loc);
 
+            string responseCode = "";
+            string content = this.ServeMe.GetSeUpContent();
+            if (!string.IsNullOrEmpty(content))
+            {
+                this.ServeMe.Log("Searching for matching setting ...");
                 foreach (string s in content.Split('\n'))
                 {
                     if (string.IsNullOrEmpty(s))
@@ -286,6 +292,7 @@
                             expectedMethod = parts[2].Trim().ToUpper();
                             if (context.Request.HttpMethod.ToLower() != expectedMethod.ToLower())
                             {
+                                this.ServeMe.Log($"Found matching setting : {s}", "Returning \'NotFound\' status");
                                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
                                 context.Response.OutputStream.Close();
                                 return;
@@ -301,8 +308,12 @@
 
                         if (to.StartsWith("http://") || to.StartsWith("https://"))
                         {
+                            this.ServeMe.Log($"Found matching setting : {s}", $"Making external call to {to}");
+
                             //expectedMethod
-                            HttpResponseMessage response = SendAsync(ToHttpRequestMessage(context.Request, to), expectedMethod, to);
+                            HttpResponseMessage response = this.SendAsync(ToHttpRequestMessage(context.Request, to), expectedMethod, to);
+                            this.ServeMe.Log($"Get {response.StatusCode} response from call to {to} ");
+
                             context.Response.StatusCode = (int)response.StatusCode;
                             string stringResponse = response.Content.ReadAsStringAsync().Result;
                             context.Response.ContentType = response.Content.Headers.ContentType.MediaType;
@@ -314,16 +325,20 @@
 
                         if (to.StartsWith("{") || to.StartsWith("["))
                         {
+                            this.ServeMe.Log($"Found matching setting : {s}");
+
                             if (!string.IsNullOrEmpty(responseCode))
                             {
                                 int.TryParse(responseCode, out int code);
                                 context.Response.StatusCode = code;
+                                this.ServeMe.Log($"Returning status code {code}");
                             }
 
                             string responseData = to.Trim();
                             if (!string.IsNullOrEmpty(responseData))
                             {
                                 context.Response.ContentType = "application/json";
+                                this.ServeMe.Log($"Returning json {responseData}");
                                 new MemoryStream(Encoding.Default.GetBytes(responseData)).WriteTo(context.Response.OutputStream);
                             }
 
@@ -338,7 +353,7 @@
 
             if (string.IsNullOrEmpty(filename))
                 foreach (string indexFile in this._indexFiles)
-                    if (File.Exists(Path.Combine(this._rootDirectory, indexFile)))
+                    if (this.ServeMe.FileExists(Path.Combine(this._rootDirectory, indexFile)))
                     {
                         filename = indexFile;
                         break;
@@ -347,8 +362,9 @@
             filename = filename ?? "";
             if (!filename.Contains(":"))
                 filename = Path.Combine(this._rootDirectory, filename);
+            this.ServeMe.Log($"Working on returning resource {filename}");
 
-            if (File.Exists(filename))
+            if (this.ServeMe.FileExists(filename))
                 try
                 {
                     Stream input = new FileStream(filename, FileMode.Open);
@@ -378,10 +394,13 @@
                 }
                 catch (Exception ex)
                 {
+                    this.ServeMe.Log($"Error occured while returning resource {filename} : {ex.Message} {ex.InnerException?.Message}");
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 }
             else
                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+
+            this.ServeMe.Log("Request process completed");
 
             context.Response.OutputStream.Close();
         }
@@ -394,19 +413,16 @@
             this._serverThread.Start();
         }
 
-        public static HttpResponseMessage SendAsync(
+        public HttpResponseMessage SendAsync(
             HttpRequestMessage request,
             string method,
-            string remote,
-            Action<string, string, string, HttpRequestMessage, Exception> requestInfoOnRewritingException = null,
-            Action<string, string, HttpRequestMessage, HttpResponseMessage, Exception, string> requestInfoOnRespondingFromRemoteServer = null)
+            string remote)
         {
             try
             {
                 //todo using task run here now, but it needs to be refactored for performance
                 HttpResponseMessage response = Task.Run(() => client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Result;
 
-                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, response, null, "Request succeeded");
                 response.Headers.Via.Add(new ViaHeaderValue("1.1", "ServeMeProxy", "http"));
                 //same again clear out due to protocol violation
                 if (request.Method == HttpMethod.Head)
@@ -420,7 +436,8 @@
                 if (e.InnerException != null)
                     errorMessage += " - " + e.InnerException.Message;
 
-                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, null, e, "Request failed");
+                this.ServeMe.Log($"{e.GetType().Name} Error while sending {method} request to {request?.RequestUri}", errorMessage);
+
                 return new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.BadGateway,
@@ -431,8 +448,8 @@
             {
                 // For instance, on some OSes, .NET Core doesn't yet
                 // support ServerCertificateCustomValidationCallback
+                this.ServeMe.Log($"{e.GetType().Name} Error while sending {method} request to {request?.RequestUri}");
 
-                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, null, e, "Sorry, your system does not support the requested feature.");
                 return new HttpResponseMessage
                 {
                     StatusCode = 0,
@@ -441,7 +458,7 @@
             }
             catch (TaskCanceledException e)
             {
-                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, null, e, " The request timed out, the endpoint might be unreachable.");
+                this.ServeMe.Log($"{e.GetType().Name} Error while sending {method} request to {request?.RequestUri}");
 
                 return new HttpResponseMessage
                 {
@@ -456,9 +473,11 @@
                 string message = ex.Message;
                 if (ex.InnerException != null)
                     message += ':' + ex.InnerException.Message;
+
+                this.ServeMe.Log($"{ex.GetType().Name} Error while sending {method} request to {request?.RequestUri}", message);
+
                 response.Content = new StringContent(message);
                 Trace.TraceError("Error:{0}", message);
-                requestInfoOnRespondingFromRemoteServer?.Invoke(remote, method, request, response, ex, "Request failed");
                 return response;
             }
         }

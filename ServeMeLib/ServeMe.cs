@@ -9,6 +9,14 @@
 
     public class ServeMe : IDisposable
     {
+        public static readonly string CurrentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
+        readonly string ServerFileName = CurrentPath + "\\server.csv";
+
+        internal Func<string, bool> FileExists = fn => File.Exists(fn);
+
+        readonly object padlock = new object();
+        internal Func<string, string> ReadAllTextFromFile = fn => File.ReadAllText(fn);
+
         internal string ServerCsv { set; get; }
 
         SimpleHttpServer MyServer { get; set; }
@@ -18,8 +26,119 @@
             this.MyServer.Stop();
         }
 
-        public List<string> Start(string directory = null, string serverCsv = null)
+        internal string GetSeUpContent()
         {
+            if (!string.IsNullOrEmpty(this.ServerCsv) || this.FileExists(this.ServerFileName))
+            {
+                string content = this.ServerCsv ?? this.ReadAllTextFromFile(this.ServerFileName);
+                string[] updateContent;
+                if (this.ExtractFromSettings("app LoadSettingsFromFile", content, out updateContent) == 2)
+                {
+                    string alternatePath = updateContent[1];
+                    content = this.ReadAllTextFromFile(alternatePath);
+                }
+
+                return content;
+            }
+
+            return string.Empty;
+        }
+
+        int ExtractFromSettings(string match, string content, out string[] args)
+        {
+            match = match.ToLower().Trim();
+
+            if (!string.IsNullOrEmpty(content))
+            {
+                string[] lns = content.Split('\n');
+                foreach (string s in lns)
+                {
+                    if (string.IsNullOrEmpty(s))
+                        continue;
+                    string[] lines = s.Split(',');
+                    if (lines[0].ToLower().Trim() == match)
+                    {
+                        args = lines;
+                        return lines.Length;
+                    }
+                    else
+                    {
+                    }
+                }
+            }
+
+            args = new string[] { };
+            return 0;
+        }
+
+        int ExtractFromSettings(string match, out string[] args)
+        {
+            match = match.ToLower().Trim();
+            string content = this.GetSeUpContent().ToLower().Trim();
+            if (!string.IsNullOrEmpty(content))
+            {
+                string[] lns = content.Split('\n');
+                foreach (string s in lns)
+                {
+                    if (string.IsNullOrEmpty(s))
+                        continue;
+                    string[] lines = s.Split(',');
+                    if (lines[0].Trim() == match.ToLower())
+                    {
+                        args = lines;
+                        return lines.Length;
+                    }
+                    else
+                    {
+                    }
+                }
+            }
+
+            args = new string[] { };
+            return 0;
+        }
+
+        internal bool Log(params string[] log)
+        {
+            string[] data;
+            int count = this.ExtractFromSettings("app log", out data);
+            if (count != 0)
+            {
+                if (count > 1)
+                    lock (this.padlock)
+                    {
+                        try
+                        {
+                            File.AppendAllLines(data[1], log);
+                            return true;
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Error while trying to log to " + data[1]);
+                            Console.WriteLine(e);
+                        }
+                    }
+
+                foreach (string s in log)
+                    Console.WriteLine($"ServeMe {DateTime.Now} : " + s);
+            }
+
+            return true;
+        }
+
+        internal bool CanOpenDefaultBrowserOnStart()
+        {
+            string[] data;
+            if (this.ExtractFromSettings("app openDefaultBrowserOnStartUp", out data) != 0)
+                return true;
+
+            return false;
+        }
+
+        public List<string> Start(string directory = null, string serverCsv = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null)
+        {
+            this.FileExists = fileExists ?? this.FileExists;
+            this.ReadAllTextFromFile = readAllTextFromFile ?? this.ReadAllTextFromFile;
             this.ServerCsv = serverCsv;
             var endpoints = new List<string>();
             this.MyServer = new SimpleHttpServer(directory ?? Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory()), this);
@@ -40,6 +159,35 @@
             Console.WriteLine("Another example, to return a 404  when only GET /AllData do ");
             Console.WriteLine("UpdateOrder ,  {} , GET , 404");
             Console.WriteLine("");
+
+            Console.WriteLine("Another example, to return http://www.google.com content when only GET /google, matching the path and query exactly(not case sensitive) , then server.csv will contain ");
+            Console.WriteLine("equalto /google , http://www.google.com , GET");
+            Console.WriteLine("");
+
+            Console.WriteLine("Another example, to return http://www.google.com content when only GET and the path and query ends with /google (not case sensitive) , then server.csv will contain");
+            Console.WriteLine("EndsWith /google , http://www.google.com , GET");
+            Console.WriteLine("");
+
+            Console.WriteLine("To have ServeMe locate your settings file from another location, do ");
+            Console.WriteLine("app LoadSettingsFromFile, c:/settings.csv");
+            Console.WriteLine("");
+
+            Console.WriteLine("To enable logging do ");
+            Console.WriteLine("app log, c:/log.txt");
+            Console.WriteLine("");
+
+            Console.WriteLine("This will enable logging to console");
+            Console.WriteLine("app log");
+            Console.WriteLine("");
+
+            Console.WriteLine("To open default browser when app starts do");
+            Console.WriteLine("app openDefaultBrowserOnStartUp");
+            Console.WriteLine("");
+
+            Console.WriteLine("For more examples checkout ");
+            Console.WriteLine("https://github.com/ServeMeLlib/dev");
+            Console.WriteLine("");
+
             Console.WriteLine("You can access your server through any of the following endpoints :");
             Console.WriteLine("");
             Console.BackgroundColor = ConsoleColor.Black;

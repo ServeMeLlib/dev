@@ -1,9 +1,9 @@
 ﻿namespace ServeMe.Tests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using ServeMeLib;
     using System.Linq;
     using System.Net;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using ServeMeLib;
 
     [TestClass]
     public class when_serve_me_runs
@@ -18,6 +18,32 @@
                 HttpWebResponse result = (url + "/getSome").Get();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void it_can_load_settings_from_another_file()
+        {
+            string serverCsv = @"app LoadSettingsFromFile,settings.txt";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv, fn => true, fn => fn == "settings.txt" ? "getSome,{'ya':1},get,200" : "").First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void it_can_load_settings_from_another_file_with_logging()
+        {
+            string serverCsv = "app LoadSettingsFromFile,settings.txt";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(null, serverCsv, fn => true, fn => fn == "settings.txt" ? "getSome,{'ya':1},get,200\napp log" : "").First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
