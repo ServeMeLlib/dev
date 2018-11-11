@@ -86,6 +86,8 @@ to return http://www.google.com content  when only GET and the path and query do
 
 ---- To enable logging to file put this in your server.csv `app log, log.txt` and to log only to console , so `app log` exclude the file name.
 
+---- To specify a port number to use, put this in your server.csv `app port,8080` . The port must not be in use.
+
 ---- To open your default browser automatically when you start ServeMe.exe , put this in your server.csv `app openDefaultBrowserOnStartUp`
 
 ----
