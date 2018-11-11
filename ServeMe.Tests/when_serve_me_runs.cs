@@ -1,5 +1,6 @@
 ﻿namespace ServeMe.Tests
 {
+    using System.IO;
     using System.Linq;
     using System.Net;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,6 +20,32 @@
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+        [TestMethod]
+        public void it_can_write_response_to_file()
+        {
+            string serverCsv = @"getSome,http://www.google.com,get,200,save data.json";
+            using (var serveMe = new ServeMe())
+            {
+                if (File.Exists("data.json"))
+                {
+                    File.Delete("data.json");
+                }
+                Assert.IsFalse(File.Exists("data.json"));
+
+                string url = serveMe.Start(serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+                Assert.IsTrue(File.Exists("data.json"));
+                Assert.IsTrue(File.ReadAllText("data.json").StartsWith("<!doc"));
+                if (File.Exists("data.json"))
+                {
+                    File.Delete("data.json");
+                }
+                Assert.IsFalse(File.Exists("data.json"));
             }
         }
 

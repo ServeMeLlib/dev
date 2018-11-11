@@ -167,10 +167,12 @@
             return null;
         }
 
-        public List<string> Start(string serverCsv = null, int? port = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null)
+        internal Action<string, string> WriteAllTextToFile = (fn, txt) => File.WriteAllText(fn,txt);
+        public List<string> Start(string serverCsv = null, int? port = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null, Action<string, string> writeAllTextToFile = null)
         {
             this.FileExists = fileExists ?? this.FileExists;
             this.ReadAllTextFromFile = readAllTextFromFile ?? this.ReadAllTextFromFile;
+            this.WriteAllTextToFile = writeAllTextToFile ?? this.WriteAllTextToFile;
             this.ServerCsv = serverCsv;
             var endpoints = new List<string>();
 

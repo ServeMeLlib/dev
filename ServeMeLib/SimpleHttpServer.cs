@@ -283,7 +283,31 @@
                             continue;
                     }
 
-                    string to = parts[1].Trim();
+                   
+                    var toParts = System.Text.RegularExpressions.Regex.Split(parts[1], @"\s{1,}");
+                    string to = toParts[0].Trim();
+                    string saveFile = null;
+                    string authType = null;
+                    string userName = null;
+                    string password = null;
+                    if (parts.Length > 4)
+                    {
+                        var saveParts = System.Text.RegularExpressions.Regex.Split(parts[4], @"\s{1,}");
+                        if (saveParts[0].Trim().ToLower() == "save")
+                        {
+                            saveFile = saveParts[1];
+                        }
+                    }
+                    if (toParts.Length > 3)
+                    {
+                        if (toParts[1].Trim().ToLower() == "auth")
+                        {
+                            authType = toParts[2];
+                            userName = toParts[3];
+                            password = toParts[4];
+                            
+                        }
+                    }
                     filename = to;
                     string expectedMethod = "GET";
                     if (parts.Length > 2)
@@ -304,18 +328,41 @@
                         to.StartsWith("http://") || to.StartsWith("https://")
                     )
                     {
-                        responseCode = parts[3].Trim();
+                        if (parts.Length > 3)
+                        {
+                            responseCode = parts[3].Trim();
+                        }
+                        else
+                        {
+                            responseCode = "200";
+                        }
+                       
 
                         if (to.StartsWith("http://") || to.StartsWith("https://"))
                         {
+
+
                             this.ServeMe.Log($"Found matching setting : {s}", $"Making external call to {to}");
+
 
                             //expectedMethod
                             HttpResponseMessage response = this.SendAsync(ToHttpRequestMessage(context.Request, to), expectedMethod, to);
+
+
                             this.ServeMe.Log($"Get {response.StatusCode} response from call to {to} ");
 
                             context.Response.StatusCode = (int)response.StatusCode;
                             string stringResponse = response.Content.ReadAsStringAsync().Result;
+
+                            if (saveFile != null)
+                            {
+                                this.ServeMe.Log($"Saving to file {saveFile}...");
+                                lock (PadLock)
+                                {
+                                  ServeMe.WriteAllTextToFile(saveFile,stringResponse);
+                                }
+                            }
+
                             context.Response.ContentType = response.Content.Headers.ContentType.MediaType;
                             new MemoryStream(Encoding.Default.GetBytes(stringResponse)).WriteTo(context.Response.OutputStream);
 
@@ -404,6 +451,8 @@
 
             context.Response.OutputStream.Close();
         }
+
+        public object PadLock =new object();
 
         void Initialize(string path, int port)
         {
