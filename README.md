@@ -81,8 +81,11 @@ to return http://www.google.com content  when only GET and the path and query do
  Notice the '!' prefix
 
 ---- Please note that the default is `regex` when ever nothing is specified
+
 ---- If you want to relocate your server settings to another folder , put this in your server.csv `app LoadSettingsFromFile,path/to/file/nameOfFile.cxv`
+
 ---- To enable logging to file put this in your server.csv `app log, log.txt` and to log only to console , so `app log` exclude the file name.
+
 ---- To open your default browser automatically when you start ServeMe.exe , put this in your server.csv `app openDefaultBrowserOnStartUp`
 
 ----
