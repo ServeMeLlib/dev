@@ -114,7 +114,8 @@
             ServicePointManager.DefaultConnectionLimit = 100;
             var handler = new HttpClientHandler
             {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                UseCookies = false
             };
             client = new HttpClient(handler);
 
@@ -348,7 +349,7 @@
                         {
                             authType = toParts[2].ToLower().Trim();
                             userName = toParts[3];
-                            password = toParts[4];
+                            password = toParts.Length > 4 ? toParts[4] : "";
                         }
 
                     filename = to;
@@ -388,7 +389,10 @@
                                     request.Headers.Authorization =
                                         new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.Default.GetBytes($"{userName}:{password}")));
                                 if (authType == "cookie")
+                                {
+                                
                                     request.Headers.Add("Cookie", userName);
+                                }
                             }
 
                             ServicePointManager.Expect100Continue = false;
