@@ -10,6 +10,34 @@
     public class when_serve_me_runs
     {
         [TestMethod]
+        public void return_maprequestpathtolink()
+        {
+            string serverCsv = "equalto /search?q=hello,appendtolink http://www.google.com,get\napp log";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(serverCsv).First();
+                HttpWebResponse result = (url + "/search?q=hello").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void return_link_as_json()
+        {
+            string serverCsv = @"getSome,json http://www.google.com,get";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult == "http://www.google.com");
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
         public void it_can_connect_with_cookie_auth()
         {
             string serverCsv = @"getSome,http://www.google.com auth cookie MYCOOKIE MYOHMYOHMY,get";

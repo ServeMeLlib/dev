@@ -15,9 +15,9 @@
     using System.Threading;
     using System.Threading.Tasks;
 
-    internal class SimpleHttpServer
+    class SimpleHttpServer
     {
-        private static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+        static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
             #region extension to MIME type list
 
@@ -89,7 +89,7 @@
             #endregion extension to MIME type list
         };
 
-        private readonly string[] _indexFiles =
+        readonly string[] _indexFiles =
         {
             "index.html",
             "index.htm",
@@ -97,11 +97,11 @@
             "default.htm"
         };
 
-        private HttpListener _listener;
-        private int _port;
-        private string _rootDirectory;
+        HttpListener _listener;
+        int _port;
+        string _rootDirectory;
 
-        private Thread _serverThread;
+        Thread _serverThread;
 
         public object PadLock = new object();
 
@@ -132,7 +132,7 @@
             this.Initialize(path, port.Value);
         }
 
-        private ServeMe ServeMe { get; }
+        ServeMe ServeMe { get; }
 
         public int Port
         {
@@ -140,7 +140,7 @@
             private set { }
         }
 
-        private static HttpClient client { set; get; }
+        static HttpClient client { set; get; }
 
         /// <summary>
         ///     Stop server and dispose all functions.
@@ -153,7 +153,7 @@
             client.Dispose();
         }
 
-        private void Listen()
+        void Listen()
         {
             this._listener = new HttpListener();
             this._listener.Prefixes.Add("http://*:" + this._port.ToString() + "/");
@@ -181,7 +181,7 @@
             }
         }
 
-        private void Process(HttpListenerContext context)
+        void Process(HttpListenerContext context)
         {
             string filename = context.Request.Url.AbsolutePath;
 
@@ -223,80 +223,106 @@
                     switch (descriptor)
                     {
                         case "equalto":
-                            {
-                                if (from != pathAndQuery)
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (from != pathAndQuery)
+                                continue;
+                            break;
+                        }
                         case "!equalto":
-                            {
-                                if (from == pathAndQuery)
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (from == pathAndQuery)
+                                continue;
+                            break;
+                        }
                         case "contains":
-                            {
-                                if (!pathAndQuery.Contains(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (!pathAndQuery.Contains(from))
+                                continue;
+                            break;
+                        }
                         case "!contains":
-                            {
-                                if (pathAndQuery.Contains(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (pathAndQuery.Contains(from))
+                                continue;
+                            break;
+                        }
                         case "startswith":
-                            {
-                                if (!pathAndQuery.StartsWith(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (!pathAndQuery.StartsWith(from))
+                                continue;
+                            break;
+                        }
                         case "!startswith":
-                            {
-                                if (pathAndQuery.StartsWith(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (pathAndQuery.StartsWith(from))
+                                continue;
+                            break;
+                        }
                         case "endswith":
-                            {
-                                if (!pathAndQuery.EndsWith(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (!pathAndQuery.EndsWith(from))
+                                continue;
+                            break;
+                        }
                         case "!endswith":
-                            {
-                                if (pathAndQuery.EndsWith(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (pathAndQuery.EndsWith(from))
+                                continue;
+                            break;
+                        }
                         case "regex":
-                            {
-                                if (!new Regex(from).Match(pathAndQuery.Trim()).Success)
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (!new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                continue;
+                            break;
+                        }
                         case "!regex":
-                            {
-                                if (new Regex(from).Match(pathAndQuery.Trim()).Success)
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                continue;
+                            break;
+                        }
                         default:
                             continue;
                     }
 
                     string[] toParts = Regex.Split(parts[1], @"\s{1,}");
-                    string to = toParts[0].Trim().ToLower();
+                    string to = toParts[0].Trim();
+                    string[] toPossiblePartsPart = parts[1].Split(new[] { ' ' }, 2);
+                    bool expectedJson = false;
+                    string toFirstPart = toPossiblePartsPart[0].Trim().ToLower();
+                    if (toPossiblePartsPart.Length > 1)
+                    {
+                        if (toFirstPart == "json")
+                        {
+                            expectedJson = true;
+                            to = toPossiblePartsPart[1].Trim();
+                            toParts = Regex.Split(toPossiblePartsPart[1], @"\s{1,}");
+                        }
+                        else if (toFirstPart == "appendtolink")
+                        {
+                            to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + context.Request.Url.PathAndQuery;
+                            toParts = Regex.Split(toPossiblePartsPart[1], @"\s{1,}");
+                        }
+                    }
+
                     string saveFile = null;
                     string authType = null;
                     string userName = null;
                     string password = null;
+                    bool saveAsServed = false;
                     if (parts.Length > 4)
                     {
                         string[] saveParts = Regex.Split(parts[4], @"\s{1,}");
                         if (saveParts[0].Trim().ToLower() == "save")
                             saveFile = saveParts[1];
+                        if (saveParts[0].Trim().ToLower() == "saveasserved")
+                        {
+                            if (filename.Contains("."))
+                                saveFile = filename;
+                            else
+                                saveFile = saveParts[1];
+                        }
                     }
 
                     if (toParts.Length > 3)
@@ -332,7 +358,7 @@
                         else
                             responseCode = "200";
 
-                        if (to.StartsWith("http://") || to.StartsWith("https://"))
+                        if (!expectedJson && (to.StartsWith("http://") || to.StartsWith("https://")))
                         {
                             this.ServeMe.Log($"Found matching setting : {s}", $"Making external call to {to}");
 
@@ -344,14 +370,7 @@
                                     request.Headers.Authorization =
                                         new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.Default.GetBytes($"{userName}:{password}")));
                                 if (authType == "cookie")
-                                {
-                                    var clientCookie = new Cookie(userName, password);
-                                    clientCookie.Expires = DateTime.Now.AddDays(2);
-                                    clientCookie.Domain = request.RequestUri.Host;
-                                    clientCookie.Path = "/";
-                                    string cook = clientCookie.ToString();
-                                    request.Headers.Add("Cookie", cook + ";_ga=GA1.2.2066560216.1541104696");
-                                }
+                                    request.Headers.Add("Cookie", userName);
                             }
 
                             ServicePointManager.Expect100Continue = false;
@@ -370,6 +389,7 @@
                                 if (!string.IsNullOrEmpty(saveFile))
                                 {
                                     this.ServeMe.Log($"Saving to file {saveFile}...");
+
                                     lock (this.PadLock)
                                     {
                                         this.ServeMe.WriteAllTextToFile(saveFile, stringResponse);
@@ -402,7 +422,7 @@
                             return;
                         }
 
-                        if (to.StartsWith("{") || to.StartsWith("["))
+                        if (expectedJson || to.StartsWith("{") || to.StartsWith("["))
                         {
                             this.ServeMe.Log($"Found matching setting : {s}");
 
@@ -484,7 +504,7 @@
             context.Response.OutputStream.Close();
         }
 
-        private void Initialize(string path, int port)
+        void Initialize(string path, int port)
         {
             this._rootDirectory = path;
             this._port = port;
@@ -561,7 +581,7 @@
             }
         }
 
-        private static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
+        static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
         {
             var method = new HttpMethod(requestInfo.HttpMethod);
 
