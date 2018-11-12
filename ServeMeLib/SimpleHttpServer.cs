@@ -223,65 +223,65 @@
                     switch (descriptor)
                     {
                         case "equalto":
-                        {
-                            if (from != pathAndQuery)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (from != pathAndQuery)
+                                    continue;
+                                break;
+                            }
                         case "!equalto":
-                        {
-                            if (from == pathAndQuery)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (from == pathAndQuery)
+                                    continue;
+                                break;
+                            }
                         case "contains":
-                        {
-                            if (!pathAndQuery.Contains(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!pathAndQuery.Contains(from))
+                                    continue;
+                                break;
+                            }
                         case "!contains":
-                        {
-                            if (pathAndQuery.Contains(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (pathAndQuery.Contains(from))
+                                    continue;
+                                break;
+                            }
                         case "startswith":
-                        {
-                            if (!pathAndQuery.StartsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!pathAndQuery.StartsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "!startswith":
-                        {
-                            if (pathAndQuery.StartsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (pathAndQuery.StartsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "endswith":
-                        {
-                            if (!pathAndQuery.EndsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!pathAndQuery.EndsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "!endswith":
-                        {
-                            if (pathAndQuery.EndsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (pathAndQuery.EndsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "regex":
-                        {
-                            if (!new Regex(from).Match(pathAndQuery.Trim()).Success)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                    continue;
+                                break;
+                            }
                         case "!regex":
-                        {
-                            if (new Regex(from).Match(pathAndQuery.Trim()).Success)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                    continue;
+                                break;
+                            }
                         default:
                             continue;
                     }
@@ -311,18 +311,36 @@
                     string userName = null;
                     string password = null;
                     bool saveAsServed = false;
+                    string find = null;
+                    string replace = null;
                     if (parts.Length > 4)
                     {
                         string[] saveParts = Regex.Split(parts[4], @"\s{1,}");
-                        if (saveParts[0].Trim().ToLower() == "save")
-                            saveFile = saveParts[1];
-                        if (saveParts[0].Trim().ToLower() == "saveasserved")
+                        if (saveParts.Length > 1)
                         {
-                            if (filename.Contains("."))
-                                saveFile = filename;
-                            else
+                            if (saveParts[0].Trim().ToLower() == "save")
                                 saveFile = saveParts[1];
+                            if (saveParts[0].Trim().ToLower() == "saveasserved")
+                            {
+                                if (context.Request.Url.IsFile)
+                                {
+                                    saveFile = System.IO.Path.GetFileName(context.Request.Url.LocalPath);
+                                }
+                                else
+                                {
+                                    //else use default file
+                                    saveFile = saveParts[1];
+                                }
+                            }
                         }
+
+                        if (saveParts.Length > 3)
+                        {
+                            find = saveParts[2];
+                            replace = saveParts[3];
+                        }
+
+
                     }
 
                     if (toParts.Length > 3)
@@ -390,6 +408,10 @@
                                 {
                                     this.ServeMe.Log($"Saving to file {saveFile}...");
 
+                                    if (!string.IsNullOrEmpty(find) && !string.IsNullOrEmpty(replace))
+                                    {
+                                        stringResponse = stringResponse.Replace(find, replace);
+                                    }
                                     lock (this.PadLock)
                                     {
                                         this.ServeMe.WriteAllTextToFile(saveFile, stringResponse);
