@@ -635,7 +635,11 @@
             if (request.Headers.Contains("Host"))
                 request.Headers.Remove("Host");
             request.Headers.Add("Host", request.RequestUri.DnsSafeHost);
-            return request;
+            if (!request.Headers.Contains("UserAgent"))
+            {
+                request.Headers.Add("UserAgent", "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.1) Gecko/2008070208 Firefox/3.0.1");
+            }
+                return request;
         }
     }
 }
