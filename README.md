@@ -90,7 +90,8 @@ to return http://www.google.com content  when only GET and the path and query do
 
 ---- To open your default browser automatically when you start ServeMe.exe , put this in your server.csv `app openDefaultBrowserOnStartUp`
 
----- Ok, how about this, imagine you'd like to call a method from an assembly from a dll file. Here is how to do it in server.csv `getSome,assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get`
+---- Ok, how about this, imagine you'd like to call a method from an assembly from a dll file. Here is how to do it in server.csv `getSome,assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get` Inside unit tests you can use this helper method to compose the execution instruction `string instruction = ServeMe.GetMethodExecutionInstruction(this.GetType(), methodName, arg);`
+
 
 ----
 This is how a sample server.csv looks like https://github.com/ServeMeLlib/dev/blob/master/server.csv
