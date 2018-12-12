@@ -24,6 +24,15 @@
 
         SimpleHttpServer MyServer { get; set; }
 
+        public static string GetMethodExecutionInstruction(Type type, string methodName, string arg = "")
+        {
+            Assembly assembly = type.Assembly;
+            string fileName = assembly.CodeBase;
+            string className = type.FullName;
+            string instruction = $"{fileName} {className} {methodName} {arg}";
+            return instruction;
+        }
+
         public void Dispose()
         {
             this.MyServer.Stop();
