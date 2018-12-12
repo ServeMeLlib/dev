@@ -3,12 +3,39 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Reflection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using ServeMeLib;
 
     [TestClass]
     public class when_serve_me_runs
     {
+        public string DoSomething(string arg)
+        {
+            return "yo " + arg;
+        }
+
+        [TestMethod]
+        public void execute_a_function_in_assembly()
+        {
+            Assembly assembly = this.GetType().Assembly;
+            string fileName = assembly.CodeBase;
+            string className = this.GetType().FullName;
+            string methodName = nameof(this.DoSomething);
+            string arg = "w";
+            string instruction = $"{fileName} {className} {methodName} {arg}";
+
+            string serverCsv = @"getSome,assembly " + instruction + ",get";
+            //getSome,assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start(serverCsv).First();
+                HttpWebResponse result = (url + "/getSome").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult == "yo " + arg);
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
 
         [TestMethod]
         public void return_maprequestpathtolink()

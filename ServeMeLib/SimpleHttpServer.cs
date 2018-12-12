@@ -10,6 +10,7 @@
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Net.Sockets;
+    using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
@@ -224,65 +225,65 @@
                     switch (descriptor)
                     {
                         case "equalto":
-                            {
-                                if (from != pathAndQuery)
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (from != pathAndQuery)
+                                continue;
+                            break;
+                        }
                         case "!equalto":
-                            {
-                                if (from == pathAndQuery)
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (from == pathAndQuery)
+                                continue;
+                            break;
+                        }
                         case "contains":
-                            {
-                                if (!pathAndQuery.Contains(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (!pathAndQuery.Contains(from))
+                                continue;
+                            break;
+                        }
                         case "!contains":
-                            {
-                                if (pathAndQuery.Contains(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (pathAndQuery.Contains(from))
+                                continue;
+                            break;
+                        }
                         case "startswith":
-                            {
-                                if (!pathAndQuery.StartsWith(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (!pathAndQuery.StartsWith(from))
+                                continue;
+                            break;
+                        }
                         case "!startswith":
-                            {
-                                if (pathAndQuery.StartsWith(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (pathAndQuery.StartsWith(from))
+                                continue;
+                            break;
+                        }
                         case "endswith":
-                            {
-                                if (!pathAndQuery.EndsWith(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (!pathAndQuery.EndsWith(from))
+                                continue;
+                            break;
+                        }
                         case "!endswith":
-                            {
-                                if (pathAndQuery.EndsWith(from))
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (pathAndQuery.EndsWith(from))
+                                continue;
+                            break;
+                        }
                         case "regex":
-                            {
-                                if (!new Regex(from).Match(pathAndQuery.Trim()).Success)
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (!new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                continue;
+                            break;
+                        }
                         case "!regex":
-                            {
-                                if (new Regex(from).Match(pathAndQuery.Trim()).Success)
-                                    continue;
-                                break;
-                            }
+                        {
+                            if (new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                continue;
+                            break;
+                        }
                         default:
                             continue;
                     }
@@ -299,6 +300,20 @@
                             expectedJson = true;
                             to = toPossiblePartsPart[1].Trim();
                             toParts = Regex.Split(toPossiblePartsPart[1], @"\s{1,}");
+                        }
+                        else if (toFirstPart == "assembly")
+                        {
+                            expectedJson = true;
+                            to = toPossiblePartsPart[1].Trim();
+                            toParts = Regex.Split(toPossiblePartsPart[1], @"\s{1,}");
+
+                            if (toParts.Length < 3)
+                                throw new Exception($"Incomplete assemply instruction from input {toPossiblePartsPart[1]} : I was expecting somehting like assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get");
+
+                            object result = toParts.Length > 3 ? InvokeMethod(toParts[0], toParts[1], toParts[2], toParts[3]) : InvokeMethod(toParts[0], toParts[1], toParts[2]);
+
+                            to = result.ToString();
+                            toParts[1] = to;
                         }
                         else if (toFirstPart == "appendtolink")
                         {
@@ -324,14 +339,9 @@
                             if (saveParts[0].Trim().ToLower() == "saveasserved")
                             {
                                 if (context.Request.Url.IsFile)
-                                {
-                                    saveFile = System.IO.Path.GetFileName(context.Request.Url.LocalPath);
-                                }
+                                    saveFile = Path.GetFileName(context.Request.Url.LocalPath);
                                 else
-                                {
-                                    //else use default file
                                     saveFile = saveParts[1];
-                                }
                             }
                         }
 
@@ -340,8 +350,6 @@
                             find = saveParts[2];
                             replace = saveParts[3];
                         }
-
-
                     }
 
                     if (toParts.Length > 3)
@@ -368,7 +376,7 @@
                         }
 
                     if (parts.Length > 3 ||
-                        to.StartsWith("{") || to.StartsWith("[") ||
+                        expectedJson /*to.StartsWith("{") || to.StartsWith("[")*/ ||
                         to.StartsWith("http://") || to.StartsWith("https://")
                     )
                     {
@@ -389,10 +397,7 @@
                                     request.Headers.Authorization =
                                         new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.Default.GetBytes($"{userName}:{password}")));
                                 if (authType == "cookie")
-                                {
-                                
                                     request.Headers.Add("Cookie", userName);
-                                }
                             }
 
                             ServicePointManager.Expect100Continue = false;
@@ -413,9 +418,7 @@
                                     this.ServeMe.Log($"Saving to file {saveFile}...");
 
                                     if (!string.IsNullOrEmpty(find) && !string.IsNullOrEmpty(replace))
-                                    {
                                         stringResponse = stringResponse.Replace(find, replace);
-                                    }
                                     lock (this.PadLock)
                                     {
                                         this.ServeMe.WriteAllTextToFile(saveFile, stringResponse);
@@ -640,10 +643,46 @@
                 request.Headers.Remove("Host");
             request.Headers.Add("Host", request.RequestUri.DnsSafeHost);
             if (!request.Headers.Contains("UserAgent"))
-            {
                 request.Headers.Add("UserAgent", "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.1) Gecko/2008070208 Firefox/3.0.1");
-            }
-                return request;
+            return request;
+        }
+
+        /*
+        Object [] args = {1, "2", 3.0};
+       Object Result = DynaInvoke("c:\FullPathToDll.DLL",
+                "ClassName", "MethodName", args);
+
+        */
+
+        public static object InvokeMethod(
+            string assemblyName,
+            string className,
+            string methodName,
+            params object[] args)
+        {
+            args = args ?? new object[] { };
+            // load the assemly
+            Assembly assembly = Assembly.LoadFrom(assemblyName);
+
+            // Walk through each type in the assembly looking for our class
+            foreach (Type type in assembly.GetTypes())
+                if (type.IsClass)
+                    if (type.FullName.EndsWith(className))
+                    {
+                        // create an instance of the object
+                        object ClassObj = Activator.CreateInstance(type);
+
+                        // Dynamically Invoke the method
+                        object Result = type.InvokeMember(
+                            methodName,
+                            BindingFlags.Default | BindingFlags.InvokeMethod,
+                            null,
+                            ClassObj,
+                            args);
+                        return Result;
+                    }
+
+            throw new Exception($"could not invoke method {methodName} in assembly {assemblyName} in class {className}");
         }
     }
 }
