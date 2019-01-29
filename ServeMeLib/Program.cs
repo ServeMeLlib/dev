@@ -267,7 +267,19 @@
                                                 Uri url;
                                                 if (entryParts.Length == 1)
                                                 {
-                                                    url = new Uri(entryParts[0]);
+                                                    var urlAddressString = entryParts[0].Trim();
+
+                                                    if (urlAddressString.StartsWith("www."))
+                                                    {
+                                                        urlAddressString = "http://" + urlAddressString;
+                                                    }
+                                                    if (urlAddressString.StartsWith("/"))
+                                                    {
+                                                        urlAddressString = urls[0] + urlAddressString;
+                                                    }
+
+
+                                                    url = new Uri(urlAddressString);
                                                 }
                                                 else
                                                 {
@@ -285,6 +297,7 @@
                                                 }
                                                 else
                                                 {
+                                                    
                                                     var request = new HttpRequestMessage(method, url);
 
                                                     string param = "";
