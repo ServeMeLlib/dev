@@ -99,3 +99,5 @@ This is how a sample server.csv looks like https://github.com/ServeMeLlib/dev/bl
 You get the gist :)
 
 From the command line tool , you can enter 'help' or '?' for more information
+
+![image](https://user-images.githubusercontent.com/2102748/51878613-1be0f300-2325-11e9-9286-9b68a70d233a.png)
