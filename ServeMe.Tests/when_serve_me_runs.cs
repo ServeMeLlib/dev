@@ -39,7 +39,7 @@
        
 
         [TestMethod]
-        public void return_maprequestpathtolink()
+        public void return_maprequestpathandquerytolink()
         {
             string serverCsv = "equalto /search?q=hello,appendtolink http://www.google.com,get\napp log";
             using (var serveMe = new ServeMe())

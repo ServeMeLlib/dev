@@ -22,7 +22,7 @@
 
         internal string ServerCsv { set; get; }
 
-        SimpleHttpServer MyServer { get; set; }
+      internal  SimpleHttpServer MyServer { get; set; }
 
         public static string GetMethodExecutionInstruction(Type type, string methodName, string arg = "")
         {

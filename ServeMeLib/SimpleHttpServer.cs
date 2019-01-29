@@ -3,9 +3,11 @@
     // MIT License - Copyright (c) 2016 Can Güney Aksakalli
     // https://aksakalli.github.io/2014/02/24/simple-http-server-with-csparp.html
     using System;
+    using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
@@ -15,8 +17,9 @@
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.CSharp;
 
-    class SimpleHttpServer
+    internal  class SimpleHttpServer
     {
         static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
@@ -172,18 +175,26 @@
                 }
                 catch (Exception ex)
                 {
-                    this.ServeMe.Log(ex.Message + " " + ex.InnerException?.Message);
-                    //Console.WriteLine(ex);
-                    if (context?.Response != null)
+                    try
                     {
-                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                        context.Response.OutputStream?.Close();
+                        this.ServeMe.Log(ex.Message + " " + ex.InnerException?.Message);
+                        //Console.WriteLine(ex);
+                        if (context?.Response != null)
+                        {
+                            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            context.Response.OutputStream?.Close();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        this.ServeMe.Log("FATAL ERROR :"+ e.Message + " " + e.InnerException?.Message);
                     }
                 }
             }
         }
 
-        void Process(HttpListenerContext context)
+       void Process(HttpListenerContext context)
         {
             string filename = context.Request.Url.AbsolutePath;
 
@@ -217,11 +228,14 @@
                         !string.IsNullOrEmpty(fromParts[1].Trim());
                     if (hasDescriptor)
                     {
+                        this.ServeMe.Log("Request settings has a descriptor");
                         from = fromParts[1].Trim();
                         descriptor = fromParts[0].Trim();
+                        this.ServeMe.Log($"Descriptor : {descriptor} from {from}");
                     }
 
                     string pathAndQuery = context.Request.Url.PathAndQuery.ToLower();
+                    this.ServeMe.Log($"Matching descriptor  {descriptor} with request path {pathAndQuery} ...");
                     switch (descriptor)
                     {
                         case "equalto":
@@ -288,37 +302,54 @@
                             continue;
                     }
 
-                    string[] toParts = Regex.Split(parts[1], @"\s{1,}");
+                    string[] toParts = Regex.Split(parts[1].Trim(), @"\s{1,}");
                     string to = toParts[0].Trim();
-                    string[] toPossiblePartsPart = parts[1].Split(new[] { ' ' }, 2);
+                    string[] toPossiblePartsPart = parts[1].Trim().Split(new[] { ' ' }, 2);
                     bool expectedJson = false;
                     string toFirstPart = toPossiblePartsPart[0].Trim().ToLower();
                     if (toPossiblePartsPart.Length > 1)
                     {
+                        this.ServeMe.Log($"response is expected to be {toFirstPart}");
                         if (toFirstPart == "json")
                         {
                             expectedJson = true;
                             to = toPossiblePartsPart[1].Trim();
-                            toParts = Regex.Split(toPossiblePartsPart[1], @"\s{1,}");
+                            toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
                         }
                         else if (toFirstPart == "assembly")
                         {
                             expectedJson = true;
                             to = toPossiblePartsPart[1].Trim();
-                            toParts = Regex.Split(toPossiblePartsPart[1], @"\s{1,}");
+                            toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
 
                             if (toParts.Length < 3)
                                 throw new Exception($"Incomplete assemply instruction from input {toPossiblePartsPart[1]} : I was expecting somehting like assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get");
 
-                            object result = toParts.Length > 3 ? InvokeMethod(toParts[0], toParts[1], toParts[2], toParts[3]) : InvokeMethod(toParts[0], toParts[1], toParts[2]);
+                            object result = toParts.Length > 3 ? InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim(), toParts[3].Trim()) : InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim());
 
                             to = result.ToString();
                             toParts[1] = to;
                         }
-                        else if (toFirstPart == "appendtolink")
+                        else if (toFirstPart == "atl" || toFirstPart == "appendtolink" || toFirstPart == "appendmatchedpathandquerytolink")
                         {
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + context.Request.Url.PathAndQuery;
-                            toParts = Regex.Split(toPossiblePartsPart[1], @"\s{1,}");
+                            toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
+                        }
+                        else if (toFirstPart == "appendmatchedpathtolink")
+                        {
+                            to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + context.Request.Url.PathAndQuery.Split('#')[0].Split('?')[0];
+                            toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
+                        }
+                        else if (toFirstPart == "appendmatchedquerytolink")
+                        {
+                            string[] pathAndQueryParts = context.Request.Url.PathAndQuery.Split('#')[0].Split('?');
+                            string append = pathAndQueryParts.Length > 1 ? pathAndQueryParts[1] : "";
+                            to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + append;
+                            toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
+                        }
+                        else
+                        {
+                            this.ServeMe.Log($"Could not match expected request type of {toFirstPart} in this branch");
                         }
                     }
 
@@ -331,24 +362,24 @@
                     string replace = null;
                     if (parts.Length > 4)
                     {
-                        string[] saveParts = Regex.Split(parts[4], @"\s{1,}");
+                        string[] saveParts = Regex.Split(parts[4].Trim(), @"\s{1,}");
                         if (saveParts.Length > 1)
                         {
                             if (saveParts[0].Trim().ToLower() == "save")
-                                saveFile = saveParts[1];
+                                saveFile = saveParts[1].Trim();
                             if (saveParts[0].Trim().ToLower() == "saveasserved")
                             {
                                 if (context.Request.Url.IsFile)
                                     saveFile = Path.GetFileName(context.Request.Url.LocalPath);
                                 else
-                                    saveFile = saveParts[1];
+                                    saveFile = saveParts[1].Trim();
                             }
                         }
 
                         if (saveParts.Length > 3)
                         {
-                            find = saveParts[2];
-                            replace = saveParts[3];
+                            find = saveParts[2].Trim();
+                            replace = saveParts[3].Trim();
                         }
                     }
 
@@ -356,8 +387,10 @@
                         if (toParts[1].Trim().ToLower() == "auth")
                         {
                             authType = toParts[2].ToLower().Trim();
-                            userName = toParts[3];
-                            password = toParts.Length > 4 ? toParts[4] : "";
+                            userName = toParts[3].Trim();
+                            password = toParts.Length > 4 ? toParts[4].Trim() : "";
+
+                            this.ServeMe.Log($"Auth is configured for this request with auth type {authType}, user anme {userName} and password xxxxxxxxxx");
                         }
 
                     filename = to;
@@ -375,6 +408,7 @@
                             }
                         }
 
+                    this.ServeMe.Log($"Expected request method is {expectedMethod}");
                     if (parts.Length > 3 ||
                         expectedJson /*to.StartsWith("{") || to.StartsWith("[")*/ ||
                         to.StartsWith("http://") || to.StartsWith("https://")
@@ -403,7 +437,7 @@
                             ServicePointManager.Expect100Continue = false;
                             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                             //expectedMethod
-                            HttpResponseMessage response = this.SendAsync(request, expectedMethod, to);
+                            HttpResponseMessage response = Send(request, this.ServeMe.Log);
 
                             this.ServeMe.Log($"Get {response.StatusCode} response from call to {to} ");
 
@@ -425,6 +459,7 @@
                                     }
                                 }
 
+                                this.ServeMe.Log("Writing response to stream");
                                 new MemoryStream(Encoding.Default.GetBytes(stringResponse)).WriteTo(context.Response.OutputStream);
                             }
                             else
@@ -541,17 +576,16 @@
             this._serverThread.Start();
         }
 
-        public HttpResponseMessage SendAsync(
+        public  HttpResponseMessage Send(
             HttpRequestMessage request,
-            string method,
-            string remote)
+             Func<string[],bool> Log, Action<Exception> onError=null)
         {
             try
             {
                 //todo using task run here now, but it needs to be refactored for performance
                 HttpResponseMessage response = Task.Run(() => client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Result;
 
-                response.Headers.Via.Add(new ViaHeaderValue("1.1", "ServeMeProxy", "http"));
+                response.Headers.Via.Add(new ViaHeaderValue("1.2", "ServeMeProxy", "http"));
                 //same again clear out due to protocol violation
                 if (request.Method == HttpMethod.Head)
                     response.Content = null;
@@ -564,8 +598,8 @@
                 if (e.InnerException != null)
                     errorMessage += " - " + e.InnerException.Message;
 
-                this.ServeMe.Log($"{e.GetType().Name} Error while sending {method} request to {request?.RequestUri}", errorMessage);
-
+                Log(new []{ $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}", errorMessage });
+                onError?.Invoke(e);
                 return new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.BadGateway,
@@ -576,8 +610,8 @@
             {
                 // For instance, on some OSes, .NET Core doesn't yet
                 // support ServerCertificateCustomValidationCallback
-                this.ServeMe.Log($"{e.GetType().Name} Error while sending {method} request to {request?.RequestUri}");
-
+               Log(new []{ $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}" });
+                onError?.Invoke(e);
                 return new HttpResponseMessage
                 {
                     StatusCode = 0,
@@ -586,8 +620,8 @@
             }
             catch (TaskCanceledException e)
             {
-                this.ServeMe.Log($"{e.GetType().Name} Error while sending {method} request to {request?.RequestUri}");
-
+                Log(new []{ $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}" });
+                onError?.Invoke(e);
                 return new HttpResponseMessage
                 {
                     StatusCode = 0,
@@ -602,10 +636,11 @@
                 if (ex.InnerException != null)
                     message += ':' + ex.InnerException.Message;
 
-                this.ServeMe.Log($"{ex.GetType().Name} Error while sending {method} request to {request?.RequestUri}", message);
+               Log(new []{ $"{ex.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}", message });
 
                 response.Content = new StringContent(message);
                 Trace.TraceError("Error:{0}", message);
+                onError?.Invoke(ex);
                 return response;
             }
         }
@@ -684,5 +719,135 @@
 
             throw new Exception($"could not invoke method {methodName} in assembly {assemblyName} in class {className}");
         }
+
+
+
+        static Int32 NumberOfMatches(string orig, string find)
+        {
+            var s2 = orig.Replace(find, "");
+            return (orig.Length - s2.Length) / find.Length;
+        }
+
+        /// <summary>
+        /// This method can return System.Exception or  CompilerErrorCollection if compillation fails
+        /// 
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        public static object Execute(string body)
+        {
+            try
+            {
+
+                if (!body.Contains("\n") && !body.Contains("\r") && !body.StartsWith("return "))
+                {
+                    body = "return " + body;
+                }
+
+                    var methodName = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
+                    var NameSpaceName = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
+                    var className = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
+
+                    var returnStatement = @"";
+                    //todo ver ineficient
+                    if (NumberOfMatches(body, "return;") > 0 || NumberOfMatches(body, "return ") == 0)
+                    {
+                        returnStatement = @"return """" ;";
+                    }
+
+                   
+
+                    Dictionary<string, string> providerOptions = new Dictionary<string, string>
+            {
+              //  {"CompilerVersion", "v4.0"}
+            };
+                    CSharpCodeProvider provider = new CSharpCodeProvider(providerOptions);
+
+                    CompilerParameters compilerParams = new CompilerParameters
+                    {
+                        GenerateInMemory = true,
+                        GenerateExecutable = false,
+                        // Set compiler argument to optimize output.
+                        CompilerOptions =  "/optimize",
+                        // Set a temporary files collection.
+                        // The TempFileCollection stores the temporary files
+                        // generated during a build in the current directory,
+                        // and does not delete them after compilation.
+                        //========todo
+                        //TempFiles = new TempFileCollection(".", true),
+                        // Generate debug information.
+                        IncludeDebugInformation = true
+                    };
+               
+                var namespaces = "";
+
+                var dictionary=new Dictionary<string , string>();
+
+                foreach (var assemblyName in Assembly.GetExecutingAssembly().GetReferencedAssemblies())
+                {
+                    Assembly assembly = Assembly.Load(assemblyName);
+                    foreach (var type in assembly.GetTypes().Where(x=>x.Namespace!=null))
+                    {
+                     
+                        if (dictionary.ContainsKey(type.Namespace))
+                        {
+                            continue;
+                        }
+                        namespaces += "using " + type.Namespace + ";";
+                        dictionary.Add(type.Namespace, type.Namespace);
+                        compilerParams.ReferencedAssemblies.Add(type.Module.FullyQualifiedName);
+                    }
+                }
+
+                string source =
+                    @"
+                namespace  " + NameSpaceName + @"
+                {
+                       
+                    "+ namespaces + @"                    
+
+                    public class  " + className + @"
+                    {
+                        public object " + methodName + @"()
+                        {
+                            try{
+                               " + body +
+                    @";  "
+                    + returnStatement
+                    + @"
+                              }catch(Exception e){
+                                 return e;
+                            }     
+                        }
+                    }
+                }
+            ";
+
+                CompilerResults results = provider.CompileAssemblyFromSource(compilerParams, source);
+
+                if (results.Errors.Count != 0)
+                {
+                    var error = "";
+                    foreach (CompilerError resultsError in results?.Errors)
+                    {
+                        error += resultsError?.ErrorText + " - " + resultsError?.ToString() + Environment.NewLine;
+                    }
+
+                    return error;
+                }
+
+                    object o = results.CompiledAssembly.CreateInstance(NameSpaceName + "." + className);
+                    MethodInfo mi = o.GetType().GetMethod(methodName);
+                    var result = mi.Invoke(o, null);
+                    return result;
+                }
+            
+            catch (Exception e)
+            {
+                return e;
+            }
+        }
+
+
     }
 }

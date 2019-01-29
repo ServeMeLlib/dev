@@ -97,3 +97,5 @@ to return http://www.google.com content  when only GET and the path and query do
 This is how a sample server.csv looks like https://github.com/ServeMeLlib/dev/blob/master/server.csv
 ----
 You get the gist :)
+
+From the command line tool , you can enter 'help' or '?' for more information
