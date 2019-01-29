@@ -101,6 +101,21 @@
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("to open a link in browser do");
                         Console.WriteLine("browser http://www.google.com");
+
+
+                        Console.WriteLine("=== ME : PORTS I'M USING ===");
+
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.WriteLine("to open all the ports im using in default browsers do");
+                        Console.WriteLine("me");
+
+
+
+                        Console.WriteLine("=== ROUTE TO LOCAL HOST ON CURRENT PORT ===");
+
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.WriteLine("You don't have to enter the host while entering url. Local host will be asumed so if you do 'browser /meandyou' it will open");
+                        Console.WriteLine("the default browser to location http://locahost:[PORT]/meandyou");
                     };
 
                     server.Log("ServeMe started successfully");
@@ -123,6 +138,16 @@
                             if (entry?.ToLower() == "help" || entry?.ToLower() == "?")
                             {
                                 helpAction();
+                                continue;
+                            }
+                            if (entry?.ToLower() == "me")
+                            {
+
+                                foreach (string url in urls)
+                                {
+                                     Console.WriteLine("Opening browser to location " + url);
+                                     Process.Start(url.ToString());
+                                }
                                 continue;
                             }
                             if (entry?.ToLower() == "verbose off")
@@ -269,25 +294,18 @@
                                                 {
                                                     var urlAddressString = entryParts[0].Trim();
 
-                                                    if (urlAddressString.StartsWith("www."))
-                                                    {
-                                                        urlAddressString = "http://" + urlAddressString;
-                                                    }
-                                                    if (urlAddressString.StartsWith("/"))
-                                                    {
-                                                        urlAddressString = urls[0] + urlAddressString;
-                                                    }
-
-
-                                                    url = new Uri(urlAddressString);
+                                                    url = TryReformatUrl(urlAddressString, urls);
                                                 }
                                                 else
                                                 {
-                                                    url = new Uri(entryParts[1]);
+                                                    url = TryReformatUrl(entryParts[1], urls);
+
                                                     SpecifiedMethod = entryParts[0];
 
                                                     if (SpecifiedMethod != "browser")
+                                                    {
                                                         method = new HttpMethod(SpecifiedMethod);
+                                                    }
                                                 }
 
                                                 if (SpecifiedMethod == "browser")
@@ -368,6 +386,23 @@
                     }
                     while (true);
                 }
+        }
+
+        static Uri TryReformatUrl(string urlAddressString, List<string> urls)
+        {
+            Uri url;
+            if (urlAddressString.StartsWith("www."))
+            {
+                urlAddressString = "http://" + urlAddressString;
+            }
+
+            if (urlAddressString.StartsWith("/"))
+            {
+                urlAddressString = urls[0] + urlAddressString;
+            }
+
+            url = new Uri(urlAddressString);
+            return url;
         }
 
         public static void TryRunAsAdmin(string[] args)
