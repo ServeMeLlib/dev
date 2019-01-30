@@ -160,8 +160,10 @@
 
         void Listen()
         {
+            //https://github.com/arshad115/HttpListenerServer
             this._listener = new HttpListener();
             this._listener.Prefixes.Add("http://*:" + this._port.ToString() + "/");
+            this._listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
             //this._listener.Prefixes.Add("http://+:80/");
             this.ServeMe.Log($"About to start listening on port {this._port}");
             this._listener.Start();
@@ -324,7 +326,7 @@
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
 
                             if (toParts.Length < 3)
-                                throw new Exception($"Incomplete assemply instruction from input {toPossiblePartsPart[1]} : I was expecting somehting like assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get");
+                                throw new Exception($"Incomplete assemply instruction from input {toPossiblePartsPart[1]} : I was expecting something like assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get");
 
                             object result = toParts.Length > 3 ? InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim(), toParts[3].Trim()) : InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim());
 

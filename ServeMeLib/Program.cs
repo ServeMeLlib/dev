@@ -14,6 +14,8 @@
     class Program
     {
         //todo check autocomplete https://gist.github.com/BKSpurgeon/7f6f28e158032534615773a9a1f73a10
+        //netsh http add urlacl url=http://+:62426/ user=SAPC\Sa
+        //https://stackoverflow.com/questions/2583347/c-sharp-httplistener-without-using-netsh-to-register-a-uri/2782880#2782880
 
         static void Main(string[] args)
         {
@@ -27,6 +29,13 @@
                 using (var server = new ServeMe())
                 {
                     List<string> urls = server.Start();
+
+                    var urlToRegister = $"http://*:{server.CurrentPortUsed}/";
+
+                    //registering domain with netsh
+                    ModifyHttpSettings(urlToRegister);
+                   
+
                     if (server.CanOpenDefaultBrowserOnStart())
                         Process.Start(urls[0]);
                     string sample = "repeat 10 1000 code return System.DateTime.Now;";
@@ -431,7 +440,28 @@
                     while (true);
                 }
         }
+        /// <summary>
+        /// url e.ghttp://+:8888/
+        /// </summary>
+        /// <param name="url"></param>
+        public static void ModifyHttpSettings(string url)
+        {
+            //https://stackoverflow.com/questions/2521950/wcf-selfhosted-service-installer-class-and-netsh
+            string everyone = new System.Security.Principal.SecurityIdentifier(
+                "S-1-1-0").Translate(typeof(System.Security.Principal.NTAccount)).ToString();
 
+            string parameter = @"http add urlacl url="+url+@" user=\" + everyone;
+
+            Console.WriteLine($"Running netsh with {parameter} ...");
+            ProcessStartInfo psi = new ProcessStartInfo("netsh", parameter);
+
+            psi.Verb = "runas";
+            psi.RedirectStandardOutput = false;
+            psi.CreateNoWindow = true;
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            psi.UseShellExecute = false;
+            Process.Start(psi);
+        }
         static Uri TryReformatUrl(string urlAddressString, List<string> urls)
         {
             Uri url;

@@ -189,7 +189,7 @@
             try
             {
                 this.MyServer = new SimpleHttpServer(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory()), this, port ?? this.GetPortNumberFromSettings());
-
+              this.CurrentPortUsed=  this.MyServer.Port;
                 Console.WriteLine("Serving!");
                 Console.WriteLine("");
                 Console.WriteLine("If you are using server.csv then note that the csv format is :");
@@ -261,5 +261,7 @@
                 return new List<string>();
             }
         }
+
+        public int CurrentPortUsed { get; set; }
     }
 }
