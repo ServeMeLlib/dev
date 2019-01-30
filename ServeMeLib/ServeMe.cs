@@ -22,7 +22,12 @@
 
         internal string ServerCsv { set; get; }
 
-      internal  SimpleHttpServer MyServer { get; set; }
+        internal SimpleHttpServer MyServer { get; set; }
+
+        public void Dispose()
+        {
+            this.MyServer.Stop();
+        }
 
         public static string GetMethodExecutionInstruction(Type type, string methodName, string arg = "")
         {
@@ -31,11 +36,6 @@
             string className = type.FullName;
             string instruction = $"{fileName} {className} {methodName} {arg}";
             return instruction;
-        }
-
-        public void Dispose()
-        {
-            this.MyServer.Stop();
         }
 
         internal string GetSeUpContent()

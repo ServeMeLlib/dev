@@ -1,10 +1,8 @@
 ﻿namespace ServeMe.Tests
 {
-    using System;
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Reflection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using ServeMeLib;
 
@@ -35,8 +33,6 @@
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
-
-       
 
         [TestMethod]
         public void return_maprequestpathandquerytolink()

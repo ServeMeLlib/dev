@@ -1,7 +1,5 @@
 ﻿namespace ServeMeLib
 {
-    // MIT License - Copyright (c) 2016 Can Güney Aksakalli
-    // https://aksakalli.github.io/2014/02/24/simple-http-server-with-csparp.html
     using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
@@ -18,8 +16,10 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CSharp;
+    // MIT License - Copyright (c) 2016 Can Güney Aksakalli
+    // https://aksakalli.github.io/2014/02/24/simple-http-server-with-csparp.html
 
-    internal  class SimpleHttpServer
+    class SimpleHttpServer
     {
         static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
@@ -162,6 +162,7 @@
         {
             this._listener = new HttpListener();
             this._listener.Prefixes.Add("http://*:" + this._port.ToString() + "/");
+            //this._listener.Prefixes.Add("http://+:80/");
             this.ServeMe.Log($"About to start listening on port {this._port}");
             this._listener.Start();
             this.ServeMe.Log($"Now listening on port {this._port}");
@@ -188,13 +189,13 @@
                     catch (Exception e)
                     {
                         Console.WriteLine(e);
-                        this.ServeMe.Log("FATAL ERROR :"+ e.Message + " " + e.InnerException?.Message);
+                        this.ServeMe.Log("FATAL ERROR :" + e.Message + " " + e.InnerException?.Message);
                     }
                 }
             }
         }
 
-       void Process(HttpListenerContext context)
+        void Process(HttpListenerContext context)
         {
             string filename = context.Request.Url.AbsolutePath;
 
@@ -437,7 +438,7 @@
                             ServicePointManager.Expect100Continue = false;
                             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                             //expectedMethod
-                            HttpResponseMessage response = Send(request, this.ServeMe.Log);
+                            HttpResponseMessage response = this.Send(request, this.ServeMe.Log);
 
                             this.ServeMe.Log($"Get {response.StatusCode} response from call to {to} ");
 
@@ -576,9 +577,10 @@
             this._serverThread.Start();
         }
 
-        public  HttpResponseMessage Send(
+        public HttpResponseMessage Send(
             HttpRequestMessage request,
-             Func<string[],bool> Log, Action<Exception> onError=null)
+            Func<string[], bool> Log,
+            Action<Exception> onError = null)
         {
             try
             {
@@ -598,7 +600,7 @@
                 if (e.InnerException != null)
                     errorMessage += " - " + e.InnerException.Message;
 
-                Log(new []{ $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}", errorMessage });
+                Log(new[] { $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}", errorMessage });
                 onError?.Invoke(e);
                 return new HttpResponseMessage
                 {
@@ -610,7 +612,7 @@
             {
                 // For instance, on some OSes, .NET Core doesn't yet
                 // support ServerCertificateCustomValidationCallback
-               Log(new []{ $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}" });
+                Log(new[] { $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}" });
                 onError?.Invoke(e);
                 return new HttpResponseMessage
                 {
@@ -620,7 +622,7 @@
             }
             catch (TaskCanceledException e)
             {
-                Log(new []{ $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}" });
+                Log(new[] { $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}" });
                 onError?.Invoke(e);
                 return new HttpResponseMessage
                 {
@@ -636,7 +638,7 @@
                 if (ex.InnerException != null)
                     message += ':' + ex.InnerException.Message;
 
-               Log(new []{ $"{ex.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}", message });
+                Log(new[] { $"{ex.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}", message });
 
                 response.Content = new StringContent(message);
                 Trace.TraceError("Error:{0}", message);
@@ -690,135 +692,116 @@
         */
 
         public static object InvokeMethod(
-            string assemblyName,
+            string assemblyFileNameWithFullPath,
             string className,
             string methodName,
             params object[] args)
         {
             args = args ?? new object[] { };
             // load the assemly
-            Assembly assembly = Assembly.LoadFrom(assemblyName);
+            Assembly assembly = Assembly.LoadFrom(assemblyFileNameWithFullPath);
 
             // Walk through each type in the assembly looking for our class
             foreach (Type type in assembly.GetTypes())
                 if (type.IsClass)
                     if (type.FullName.EndsWith(className))
                     {
-                        // create an instance of the object
-                        object ClassObj = Activator.CreateInstance(type);
-
                         // Dynamically Invoke the method
-                        object Result = type.InvokeMember(
-                            methodName,
-                            BindingFlags.Default | BindingFlags.InvokeMethod,
-                            null,
-                            ClassObj,
-                            args);
+                        object Result = type.InvokeMember(methodName, BindingFlags.Default | BindingFlags.InvokeMethod, null, Activator.CreateInstance(type), args);
                         return Result;
                     }
 
-            throw new Exception($"could not invoke method {methodName} in assembly {assemblyName} in class {className}");
+            throw new Exception($"could not invoke method {methodName} in assembly {assemblyFileNameWithFullPath} in class {className}");
         }
 
-
-
-        static Int32 NumberOfMatches(string orig, string find)
+        static int NumberOfMatches(string orig, string find)
         {
-            var s2 = orig.Replace(find, "");
+            string s2 = orig.Replace(find, "");
             return (orig.Length - s2.Length) / find.Length;
         }
 
         /// <summary>
-        /// This method can return System.Exception or  CompilerErrorCollection if compillation fails
-        /// 
+        ///     This method can return System.Exception or  CompilerErrorCollection if compillation fails
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        public static object Execute(string body)
+        public static object Execute(string body, params object[] args)
         {
             try
             {
+                if (args != null && args.Length == 0)
+                    args = null;
 
                 if (!body.Contains("\n") && !body.Contains("\r") && !body.StartsWith("return "))
-                {
                     body = "return " + body;
-                }
 
-                    var methodName = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
-                    var NameSpaceName = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
-                    var className = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
+                string methodName = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
+                string methodNameHost = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
+                string NameSpaceName = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
+                string className = "Method_" + Guid.NewGuid().ToString().Replace("-", "");
 
-                    var returnStatement = @"";
-                    //todo ver ineficient
-                    if (NumberOfMatches(body, "return;") > 0 || NumberOfMatches(body, "return ") == 0)
-                    {
-                        returnStatement = @"return """" ;";
-                    }
+                string returnStatement = @"";
+                //todo ver ineficient
+                if (NumberOfMatches(body, "return;") > 0 || NumberOfMatches(body, "return ") == 0)
+                    returnStatement = @"return """" ;";
 
-                   
+                var providerOptions = new Dictionary<string, string>();
+                var provider = new CSharpCodeProvider(providerOptions);
 
-                    Dictionary<string, string> providerOptions = new Dictionary<string, string>
-            {
-              //  {"CompilerVersion", "v4.0"}
-            };
-                    CSharpCodeProvider provider = new CSharpCodeProvider(providerOptions);
+                var compilerParams = new CompilerParameters
+                {
+                    GenerateInMemory = true,
+                    GenerateExecutable = false,
+                    // Set compiler argument to optimize output.
+                    CompilerOptions = "/optimize",
+                    // Set a temporary files collection.
+                    // The TempFileCollection stores the temporary files
+                    // generated during a build in the current directory,
+                    // and does not delete them after compilation.
+                    //========todo
+                    //TempFiles = new TempFileCollection(".", true),
+                    // Generate debug information.
+                    IncludeDebugInformation = true
+                };
 
-                    CompilerParameters compilerParams = new CompilerParameters
-                    {
-                        GenerateInMemory = true,
-                        GenerateExecutable = false,
-                        // Set compiler argument to optimize output.
-                        CompilerOptions =  "/optimize",
-                        // Set a temporary files collection.
-                        // The TempFileCollection stores the temporary files
-                        // generated during a build in the current directory,
-                        // and does not delete them after compilation.
-                        //========todo
-                        //TempFiles = new TempFileCollection(".", true),
-                        // Generate debug information.
-                        IncludeDebugInformation = true
-                    };
-               
-                var namespaces = "";
+                string namespaces = "";
 
-                var dictionary=new Dictionary<string , string>();
+                var dictionary = new Dictionary<string, string>();
 
-                foreach (var assemblyName in Assembly.GetExecutingAssembly().GetReferencedAssemblies())
+                foreach (AssemblyName assemblyName in Assembly.GetExecutingAssembly().GetReferencedAssemblies())
                 {
                     Assembly assembly = Assembly.Load(assemblyName);
-                    foreach (var type in assembly.GetTypes().Where(x=>x.Namespace!=null))
+                    foreach (Type type in assembly.GetTypes().Where(x => x.Namespace != null))
                     {
-                     
                         if (dictionary.ContainsKey(type.Namespace))
-                        {
                             continue;
-                        }
                         namespaces += "using " + type.Namespace + ";";
                         dictionary.Add(type.Namespace, type.Namespace);
                         compilerParams.ReferencedAssemblies.Add(type.Module.FullyQualifiedName);
                     }
                 }
 
-                string source =
-                    @"
-                namespace  " + NameSpaceName + @"
-                {
-                       
-                    "+ namespaces + @"                    
+                string function = args == null
+                    ? @"
 
-                    public class  " + className + @"
-                    {
                         public object " + methodName + @"()
                         {
-                            try{
-                               " + body +
-                    @";  "
-                    + returnStatement
-                    + @"
-                              }catch(Exception e){
-                                 return e;
-                            }     
+                            try{" + body + @";" + returnStatement + @"}catch(Exception e){return e;}
                         }
+                      "
+                    : body;
+
+                string source =
+                    @"namespace  " + NameSpaceName + @"
+                {
+                    " + namespaces + @"
+                    public class  " + className + @"
+                    {
+                        public object " + methodNameHost + @"(params object[] args)
+                        {
+                            return typeof(" + className + @").InvokeMember(""" + methodName + @""",BindingFlags.Default | BindingFlags.InvokeMethod,null, Activator.CreateInstance(typeof(" + className + @")), args);
+                        }
+                      " + function + @"
                     }
                 }
             ";
@@ -827,27 +810,22 @@
 
                 if (results.Errors.Count != 0)
                 {
-                    var error = "";
+                    string error = "";
                     foreach (CompilerError resultsError in results?.Errors)
-                    {
-                        error += resultsError?.ErrorText + " - " + resultsError?.ToString() + Environment.NewLine;
-                    }
+                        error += resultsError?.ErrorText + " - " + resultsError + Environment.NewLine;
 
                     return error;
                 }
 
-                    object o = results.CompiledAssembly.CreateInstance(NameSpaceName + "." + className);
-                    MethodInfo mi = o.GetType().GetMethod(methodName);
-                    var result = mi.Invoke(o, null);
-                    return result;
-                }
-            
+                object o = results.CompiledAssembly.CreateInstance(NameSpaceName + "." + className);
+                MethodInfo mi = o.GetType().GetMethod(methodNameHost);
+                object result = mi.Invoke(o, new object[] { args });
+                return result;
+            }
             catch (Exception e)
             {
                 return e;
             }
         }
-
-
     }
 }

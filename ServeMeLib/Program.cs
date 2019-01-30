@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Net.Http;
     using System.Reflection;
@@ -12,8 +13,14 @@
 
     class Program
     {
+        //todo check autocomplete https://gist.github.com/BKSpurgeon/7f6f28e158032534615773a9a1f73a10
+
         static void Main(string[] args)
         {
+            //ProgramX p = new ProgramX(new string[4] { "Bar", "Barbec", "Barbecue", "Batman" });
+            //var rr = p.RunProgram();
+            //p.ma
+
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
                 TryRunAsAdmin(args);
             else
@@ -29,9 +36,17 @@
 
                     Action helpAction = () =>
                     {
-
                         Console.ForegroundColor = ConsoleColor.DarkGray;
-                        Console.BackgroundColor = ConsoleColor.Black; Console.ForegroundColor = ConsoleColor.Green;
+
+                        Console.BackgroundColor = ConsoleColor.Black;
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("=== ME : PORTS I'M USING ===");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.WriteLine("to open all the ports im using in default browsers do");
+                        Console.WriteLine("me");
+
+                        Console.BackgroundColor = ConsoleColor.Black;
+                        Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("=== MAKING HTTP CALLS TO REMOTE SERVER ( WITH DATA ) ===");
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -69,7 +84,8 @@
                         Console.WriteLine("repeat 10 1000 http://www.google.com");
                         Console.WriteLine("To run 10 instances of code in parallel with 5 threads");
                         Console.WriteLine("repeat 10 parallel 5 code return System.DateTime.Now;");
-                        Console.WriteLine(""); Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("");
+                        Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("=== RUNNING STUFF IN PARALLEL WITH THREADS ===");
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -87,6 +103,20 @@
                         Console.WriteLine("repeat 50 parallel 49 sourcecode cs.txt");
                         Console.WriteLine("Simple but kinda cool eh :) Awesome!");
                         Console.WriteLine("");
+
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("=== EXECUTING CODE THAT LIVES IN EXTERNAL ASSEBLY (DLL) FILE ===");
+
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+
+                        Console.WriteLine("You can even execute code that lives externally in an assembly");
+                        Console.WriteLine("For example, to execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' 50 times in parallel with 49 threads located in an external assembly file  ServeMe.Tests.dll, do ");
+                        Console.WriteLine("repeat 50 parallel 49 libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+                        Console.WriteLine("If you just want to simply execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' located in an external assembly file  ServeMe.Tests.dll, do ");
+                        Console.WriteLine("libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+                        Console.WriteLine("Now that's dope!");
+                        Console.WriteLine("");
+
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("=== DISABLING VERBOSE MODE ===");
 
@@ -102,15 +132,6 @@
                         Console.WriteLine("to open a link in browser do");
                         Console.WriteLine("browser http://www.google.com");
 
-
-                        Console.WriteLine("=== ME : PORTS I'M USING ===");
-
-                        Console.ForegroundColor = ConsoleColor.DarkGray;
-                        Console.WriteLine("to open all the ports im using in default browsers do");
-                        Console.WriteLine("me");
-
-
-
                         Console.WriteLine("=== ROUTE TO LOCAL HOST ON CURRENT PORT ===");
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -120,7 +141,6 @@
 
                     server.Log("ServeMe started successfully");
                     Console.WriteLine("For help using this small shiny tool , enter 'help' or '?' and enter");
-
 
                     string entry = "";
                     bool printResult = true;
@@ -140,16 +160,18 @@
                                 helpAction();
                                 continue;
                             }
+
                             if (entry?.ToLower() == "me")
                             {
-
                                 foreach (string url in urls)
                                 {
-                                     Console.WriteLine("Opening browser to location " + url);
-                                     Process.Start(url.ToString());
+                                    Console.WriteLine("Opening browser to location " + url);
+                                    Process.Start(url);
                                 }
+
                                 continue;
                             }
+
                             if (entry?.ToLower() == "verbose off")
                             {
                                 printResult = false;
@@ -219,6 +241,10 @@
                             }
 
                             string sourceCodeFilename = "";
+                            string assemblyFilename = "";
+                            string className = "";
+                            string methodName = "";
+                            string argument = null;
                             if (entry.Split(' ')[0].ToLower() == "code")
                             {
                                 executionType = "code";
@@ -230,6 +256,19 @@
                                 entry = entry.Remove(0, executionType.Length).Trim();
                                 sourceCodeFilename = entry.Split(' ')[0].Trim();
                                 entry = entry.Remove(0, sourceCodeFilename.Length).Trim();
+                            }
+                            else if (entry.Split(' ')[0].ToLower() == "libcode")
+                            {
+                                executionType = "libcode";
+                                entry = entry.Remove(0, executionType.Length).Trim();
+                                assemblyFilename = entry.Split(' ')[0].Trim();
+                                entry = entry.Remove(0, assemblyFilename.Length).Trim();
+                                className = entry.Split(' ')[0].Trim();
+                                entry = entry.Remove(0, className.Length).Trim();
+                                methodName = entry.Split(' ')[0].Trim();
+                                entry = entry.Remove(0, methodName.Length).Trim();
+                                argument = entry.Split(' ')[0].Trim();
+                                entry = entry.Remove(0, argument.Length).Trim();
                             }
 
                             bool isForever = repeatCount == 0;
@@ -268,12 +307,11 @@
                                                     Console.WriteLine(res);
                                                 }
                                             }
+
                                             if (executionType == "sourcecode")
                                             {
-
-
                                                 Console.WriteLine($"Loading sourcecode from file and executing it {sourceCodeFilename}...");
-                                                var source = System.IO.File.ReadAllText(sourceCodeFilename);
+                                                string source = File.ReadAllText(sourceCodeFilename);
 
                                                 object res = SimpleHttpServer.Execute(source);
                                                 Console.BackgroundColor = ConsoleColor.White;
@@ -285,6 +323,20 @@
                                                     Console.WriteLine(res);
                                                 }
                                             }
+                                            else if (executionType == "libcode")
+                                            {
+                                                Console.WriteLine($"Loading library file and executing it {assemblyFilename}...");
+
+                                                //e.g file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w
+                                                object res = SimpleHttpServer.InvokeMethod(assemblyFilename, className, methodName, argument);
+                                                Console.BackgroundColor = ConsoleColor.White;
+                                                Console.ForegroundColor = ConsoleColor.Black;
+                                                if (printResult)
+                                                {
+                                                    Console.WriteLine();
+                                                    Console.WriteLine(res);
+                                                }
+                                            }
                                             else
                                             {
                                                 string[] entryParts = entry.Split(' ');
@@ -292,20 +344,15 @@
                                                 Uri url;
                                                 if (entryParts.Length == 1)
                                                 {
-                                                    var urlAddressString = entryParts[0].Trim();
-
+                                                    string urlAddressString = entryParts[0].Trim();
                                                     url = TryReformatUrl(urlAddressString, urls);
                                                 }
                                                 else
                                                 {
                                                     url = TryReformatUrl(entryParts[1], urls);
-
                                                     SpecifiedMethod = entryParts[0];
-
                                                     if (SpecifiedMethod != "browser")
-                                                    {
                                                         method = new HttpMethod(SpecifiedMethod);
-                                                    }
                                                 }
 
                                                 if (SpecifiedMethod == "browser")
@@ -315,9 +362,7 @@
                                                 }
                                                 else
                                                 {
-                                                    
                                                     var request = new HttpRequestMessage(method, url);
-
                                                     string param = "";
                                                     if (entryParts.Length > 2)
                                                         param = entryParts[2];
@@ -373,7 +418,6 @@
                                     }
                                 ).ToList();
 
-
                             Console.ForegroundColor = ConsoleColor.DarkGreen;
                             Console.BackgroundColor = ConsoleColor.Black;
                             Console.WriteLine("OPERATION COMPLETED!");
@@ -392,14 +436,10 @@
         {
             Uri url;
             if (urlAddressString.StartsWith("www."))
-            {
                 urlAddressString = "http://" + urlAddressString;
-            }
 
             if (urlAddressString.StartsWith("/"))
-            {
                 urlAddressString = urls[0] + urlAddressString;
-            }
 
             url = new Uri(urlAddressString);
             return url;
