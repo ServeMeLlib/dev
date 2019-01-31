@@ -38,8 +38,22 @@
             return instruction;
         }
 
+        public static string InMemoryConfigurationAppend { get; private set; }
+        public static string InMemoryConfigurationPrepend { get; private set; }
+
+        public void AppendToInMemoryConfiguration(string config)
+        {
+            InMemoryConfigurationAppend = InMemoryConfigurationAppend + "\n" + config;
+        }
+        public void PrependToInMemoryConfiguration(string config)
+        {
+            InMemoryConfigurationPrepend =  config+ "\n"+ InMemoryConfigurationPrepend;
+        }
+
         internal string GetSeUpContent()
         {
+            InMemoryConfigurationPrepend = InMemoryConfigurationPrepend ?? "";
+            InMemoryConfigurationAppend = InMemoryConfigurationAppend ?? "";
             if (!string.IsNullOrEmpty(this.ServerCsv) || this.FileExists(this.ServerFileName))
             {
                 string content = this.ServerCsv ?? this.ReadAllTextFromFile(this.ServerFileName);
@@ -50,7 +64,7 @@
                     content = this.ReadAllTextFromFile(alternatePath);
                 }
 
-                return content;
+                return InMemoryConfigurationPrepend + "\n" + content + "\n" + InMemoryConfigurationAppend;
             }
 
             return string.Empty;

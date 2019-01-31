@@ -10,6 +10,7 @@
     using System.Security.Principal;
     using System.Text;
     using System.Threading;
+    using System.Web.Script.Serialization;
 
     class Program
     {
@@ -146,6 +147,23 @@
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("You don't have to enter the host while entering url. Local host will be asumed so if you do 'browser /meandyou' it will open");
                         Console.WriteLine("the default browser to location http://locahost:[PORT]/meandyou");
+
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("=== CURRENT CONFIGURATION / SETUP ===");
+
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.WriteLine("To see the current routing configuration in use (i.e both contents of server.csv file and those added into memory) do");
+                        Console.WriteLine("config");
+                        Console.WriteLine("To add config (e.g contains google, http://www.google.com ) in memory , do ");
+                        Console.WriteLine("config contains google, http://www.google.com");
+
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("=== SAVING RESULTS ===");
+
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.WriteLine("If you want to save the result of a call to an api or of the execution of code , do");
+                        Console.WriteLine("save index.html http://www.google.com/");
+
                     };
 
                     server.Log("ServeMe started successfully");
@@ -153,7 +171,7 @@
 
                     string entry = "";
                     bool printResult = true;
-
+                    string saveLocation = null;
                     do
                     {
                         Console.BackgroundColor = ConsoleColor.Black;
@@ -164,19 +182,99 @@
                             entry = entry.Trim();
                             if (entry?.ToLower() == "e" || entry?.Trim().ToLower() == "exit")
                                 break;
+
+                            if (entry.ToLower().StartsWith("save "))
+                            {
+                                entry = entry.Remove(0, "save".Length).Trim();
+                                saveLocation= entry.Split(' ')[0];
+
+                                if (string.IsNullOrEmpty(saveLocation))
+                                {
+                                    Console.ForegroundColor = ConsoleColor.Red;
+                                    Console.WriteLine($"Save location {saveLocation} not specified or is invalid");
+                                    continue;
+                                }
+                                else
+                                {
+                                    if (System.IO.File.Exists(saveLocation))
+                                    {
+                                        Console.WriteLine($"File already exist. Are you happy to override file  {saveLocation}?");
+                                        Console.WriteLine($"Enter 'y' for yes and 'n' for no. If you choose 'y' the file will be deleted immediately! :");
+                                        Console.WriteLine($"Enter 'y' for yes and 'n' for no :");
+                                        var answer=Console.ReadKey().ToString();
+                                        answer = answer.Trim().ToLower();
+                                        if (answer == "y")
+                                        {
+                                            Console.WriteLine($"File {saveLocation} will be overriden");
+                                            System.IO.File.Delete(saveLocation);
+                                        }
+                                        else if (answer == "n")
+                                        {
+                                            Console.WriteLine($"Good! Nothing will happen");
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine($"I'll take that as a 'no'. Nothing will happen");
+                                            continue;
+                                        }
+
+                                    }
+                                    entry = entry.Remove(0, saveLocation.Length).Trim();
+
+                                
+                                Console.WriteLine($"Result will be saved to {saveLocation}");
+                                }
+                            
+                               
+                            }
+
+
                             if (entry?.ToLower() == "help" || entry?.ToLower() == "?")
                             {
                                 helpAction();
                                 continue;
                             }
 
+                            if (entry.ToLower()== "config")
+                            {
+                                Console.WriteLine($"Current server configuration is:");
+                                Console.BackgroundColor = ConsoleColor.Black;
+                                Console.ForegroundColor = ConsoleColor.DarkGreen;
+
+                                var config=server.GetSeUpContent();
+                                Console.WriteLine($"{config}");
+
+                                TrySaveResult(saveLocation, config);
+                                continue;
+                            }
+                            if (entry.ToLower().StartsWith("config "))
+                            {
+                                entry = entry.Remove(0, "config".Length).Trim();
+                                if (!string.IsNullOrEmpty(entry))
+                                {
+                                    server.AppendToInMemoryConfiguration(entry);
+                                    Console.WriteLine($"The entry '{entry}' has been appended to the configuration");
+                                }
+                                continue;
+                            }
+
                             if (entry?.ToLower() == "me")
                             {
+                                Console.ForegroundColor = ConsoleColor.White;
+                                Console.WriteLine("Server endpoints : ");
+                                Console.ForegroundColor = ConsoleColor.DarkGreen;
                                 foreach (string url in urls)
                                 {
                                     Console.WriteLine("Opening browser to location " + url);
                                     Process.Start(url);
                                 }
+                                Console.ForegroundColor = ConsoleColor.White;
+                                Console.WriteLine($"Current server port is {server.GetPortNumberFromSettings()}");
+                                Console.WriteLine($"Current server configuration is:");
+                                Console.BackgroundColor = ConsoleColor.Black;
+                                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                Console.WriteLine($"{server.GetSeUpContent()}");
 
                                 continue;
                             }
@@ -303,16 +401,17 @@
                                     {
                                         try
                                         {
-                                            string SpecifiedMethod = "";
+                                            string specifiedMethod = "";
                                             if (executionType == "code")
                                             {
                                                 object res = SimpleHttpServer.Execute(entry);
                                                 Console.BackgroundColor = ConsoleColor.White;
                                                 Console.ForegroundColor = ConsoleColor.Black;
+                                                
+                                                TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
                                                 if (printResult)
                                                 {
                                                     Console.WriteLine();
-
                                                     Console.WriteLine(res);
                                                 }
                                             }
@@ -325,6 +424,7 @@
                                                 object res = SimpleHttpServer.Execute(source);
                                                 Console.BackgroundColor = ConsoleColor.White;
                                                 Console.ForegroundColor = ConsoleColor.Black;
+                                                TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
                                                 if (printResult)
                                                 {
                                                     Console.WriteLine();
@@ -340,6 +440,7 @@
                                                 object res = SimpleHttpServer.InvokeMethod(assemblyFilename, className, methodName, argument);
                                                 Console.BackgroundColor = ConsoleColor.White;
                                                 Console.ForegroundColor = ConsoleColor.Black;
+                                                TrySaveResult(saveLocation, res==null?"" :new JavaScriptSerializer().Serialize(res));
                                                 if (printResult)
                                                 {
                                                     Console.WriteLine();
@@ -359,12 +460,12 @@
                                                 else
                                                 {
                                                     url = TryReformatUrl(entryParts[1], urls);
-                                                    SpecifiedMethod = entryParts[0];
-                                                    if (SpecifiedMethod != "browser")
-                                                        method = new HttpMethod(SpecifiedMethod);
+                                                    specifiedMethod = entryParts[0];
+                                                    if (specifiedMethod != "browser")
+                                                        method = new HttpMethod(specifiedMethod);
                                                 }
 
-                                                if (SpecifiedMethod == "browser")
+                                                if (specifiedMethod == "browser")
                                                 {
                                                     Console.WriteLine("Opening browser to location " + url);
                                                     Process.Start(url.ToString());
@@ -398,6 +499,7 @@
                                                     Console.WriteLine($"Obtaining '{method}' response from '{url}' .... ");
                                                     Console.BackgroundColor = ConsoleColor.White;
                                                     Console.ForegroundColor = ConsoleColor.Black;
+                                                    TrySaveResult(saveLocation, result.Content.ReadAsStringAsync().Result);
                                                     Console.WriteLine();
                                                     if (printResult)
                                                         Console.WriteLine(result.Content.ReadAsStringAsync().Result);
@@ -440,6 +542,20 @@
                     while (true);
                 }
         }
+
+        static void TrySaveResult(string saveLocation, string config)
+        {
+            if (string.IsNullOrEmpty(saveLocation))
+                return;
+            if (string.IsNullOrEmpty(config))
+            {
+                return;
+            }
+            Console.WriteLine($"Saving to {saveLocation}...");
+            System.IO.File.AppendAllText(saveLocation, config+Environment.NewLine);
+            Console.WriteLine($"Saved!");
+        }
+
         /// <summary>
         /// url e.ghttp://+:8888/
         /// </summary>
