@@ -12,13 +12,13 @@
     using System.Threading;
     using System.Web.Script.Serialization;
 
-    class Program
+    internal class Program
     {
         //todo check autocomplete https://gist.github.com/BKSpurgeon/7f6f28e158032534615773a9a1f73a10
         //netsh http add urlacl url=http://+:62426/ user=SAPC\Sa
         //https://stackoverflow.com/questions/2583347/c-sharp-httplistener-without-using-netsh-to-register-a-uri/2782880#2782880
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             //ProgramX p = new ProgramX(new string[4] { "Bar", "Barbec", "Barbecue", "Batman" });
             //var rr = p.RunProgram();
@@ -35,7 +35,6 @@
 
                     //registering domain with netsh
                     ModifyHttpSettings(urlToRegister);
-                   
 
                     if (server.CanOpenDefaultBrowserOnStart())
                         Process.Start(urls[0]);
@@ -64,7 +63,7 @@
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("Enter a request into the system in the format [METHOD] [URI] [(optional)REQUEST_PARAM] [(optional)CONTENT_TYPE]. For example :");
                         Console.ForegroundColor = ConsoleColor.Blue;
-                        
+
                         Console.WriteLine("post http://www.google.com {'name':'cow'} application/json");
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("or simply");
@@ -105,9 +104,9 @@
                         Console.WriteLine("You can also run stuff repeatedly by prefixing with 'repeat' ");
                         Console.WriteLine("For example to execute code 10 times pausing for 1000 milliseconds inbetween , do");
                         Console.ForegroundColor = ConsoleColor.Blue;
-Console.WriteLine(sample);
+                        Console.WriteLine(sample);
                         Console.ForegroundColor = ConsoleColor.DarkGray;
-                        
+
                         Console.WriteLine("For example to call get www.google.com 10 times pausing for 1000 milliseconds inbetween , do");
                         Console.ForegroundColor = ConsoleColor.Blue;
 
@@ -223,7 +222,6 @@ Console.WriteLine(sample);
 
                         Console.WriteLine("save index.html http://www.google.com/");
                         Console.ForegroundColor = ConsoleColor.DarkGray;
-
                     };
 
                     server.Log("ServeMe started successfully");
@@ -246,9 +244,9 @@ Console.WriteLine(sample);
                             if (entry.ToLower().StartsWith("save "))
                             {
                                 entry = entry.Remove(0, "save".Length).Trim();
-                                saveLocation= entry.Split(' ')[0];
-
-                                if (string.IsNullOrEmpty(saveLocation))
+                                saveLocation = entry.Split(' ')[0];
+                                var isValidFileName = saveLocation != null && String.Concat(saveLocation.Split(Path.GetInvalidFileNameChars())) == saveLocation;
+                                if (string.IsNullOrEmpty(saveLocation) || !isValidFileName)
                                 {
                                     Console.ForegroundColor = ConsoleColor.Red;
                                     Console.WriteLine($"Save location {saveLocation} not specified or is invalid");
@@ -261,7 +259,7 @@ Console.WriteLine(sample);
                                         Console.WriteLine($"File already exist. Are you happy to override file  {saveLocation}?");
                                         Console.WriteLine($"Enter 'y' for yes and 'n' for no. If you choose 'y' the file will be deleted immediately! :");
                                         Console.WriteLine($"Enter 'y' for yes and 'n' for no :");
-                                        var answer=Console.ReadKey().ToString();
+                                        var answer = Console.ReadKey().KeyChar.ToString();
                                         answer = answer.Trim().ToLower();
                                         if (answer == "y")
                                         {
@@ -278,17 +276,12 @@ Console.WriteLine(sample);
                                             Console.WriteLine($"I'll take that as a 'no'. Nothing will happen");
                                             continue;
                                         }
-
                                     }
                                     entry = entry.Remove(0, saveLocation.Length).Trim();
 
-                                
-                                Console.WriteLine($"Result will be saved to {saveLocation}");
+                                    Console.WriteLine($"Result will be saved to {saveLocation}");
                                 }
-                            
-                               
                             }
-
 
                             if (entry?.ToLower() == "help" || entry?.ToLower() == "?")
                             {
@@ -296,13 +289,13 @@ Console.WriteLine(sample);
                                 continue;
                             }
 
-                            if (entry.ToLower()== "config")
+                            if (entry.ToLower() == "config")
                             {
                                 Console.WriteLine($"Current server configuration is:");
                                 Console.BackgroundColor = ConsoleColor.Black;
                                 Console.ForegroundColor = ConsoleColor.DarkGreen;
 
-                                var config=server.GetSeUpContent();
+                                var config = server.GetSeUpContent();
                                 Console.WriteLine($"{config}");
 
                                 TrySaveResult(saveLocation, config);
@@ -467,7 +460,7 @@ Console.WriteLine(sample);
                                                 object res = SimpleHttpServer.Execute(entry);
                                                 Console.BackgroundColor = ConsoleColor.White;
                                                 Console.ForegroundColor = ConsoleColor.Black;
-                                                
+
                                                 TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
                                                 if (printResult)
                                                 {
@@ -500,7 +493,7 @@ Console.WriteLine(sample);
                                                 object res = SimpleHttpServer.InvokeMethod(assemblyFilename, className, methodName, argument);
                                                 Console.BackgroundColor = ConsoleColor.White;
                                                 Console.ForegroundColor = ConsoleColor.Black;
-                                                TrySaveResult(saveLocation, res==null?"" :new JavaScriptSerializer().Serialize(res));
+                                                TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
                                                 if (printResult)
                                                 {
                                                     Console.WriteLine();
@@ -602,8 +595,8 @@ Console.WriteLine(sample);
                     while (true);
                 }
         }
-
-        static void TrySaveResult(string saveLocation, string config)
+        static object padlock = new object();
+        private static void TrySaveResult(string saveLocation, string config)
         {
             if (string.IsNullOrEmpty(saveLocation))
                 return;
@@ -611,9 +604,14 @@ Console.WriteLine(sample);
             {
                 return;
             }
-            Console.WriteLine($"Saving to {saveLocation}...");
-            System.IO.File.AppendAllText(saveLocation, config+Environment.NewLine);
-            Console.WriteLine($"Saved!");
+
+            lock (padlock)
+            {
+                Console.WriteLine($"Saving to {saveLocation}...");
+                System.IO.File.AppendAllText(saveLocation, config + Environment.NewLine);
+                Console.WriteLine($"Saved!");
+            }
+
         }
 
         /// <summary>
@@ -626,7 +624,7 @@ Console.WriteLine(sample);
             string everyone = new System.Security.Principal.SecurityIdentifier(
                 "S-1-1-0").Translate(typeof(System.Security.Principal.NTAccount)).ToString();
 
-            string parameter = @"http add urlacl url="+url+@" user=\" + everyone;
+            string parameter = @"http add urlacl url=" + url + @" user=\" + everyone;
 
             Console.WriteLine($"Running netsh with {parameter} ...");
             ProcessStartInfo psi = new ProcessStartInfo("netsh", parameter);
@@ -638,7 +636,8 @@ Console.WriteLine(sample);
             psi.UseShellExecute = false;
             Process.Start(psi);
         }
-        static Uri TryReformatUrl(string urlAddressString, List<string> urls)
+
+        private static Uri TryReformatUrl(string urlAddressString, List<string> urls)
         {
             Uri url;
             if (urlAddressString.StartsWith("www."))
