@@ -14,6 +14,7 @@
 
     internal class Program
     {
+        //http://www.bizcoder.com/these-8-lines-of-code-can-make-debugging-your-asp-net-web-api-a-little-bit-easier
         //todo check autocomplete https://gist.github.com/BKSpurgeon/7f6f28e158032534615773a9a1f73a10
         //netsh http add urlacl url=http://+:62426/ user=SAPC\Sa
         //https://stackoverflow.com/questions/2583347/c-sharp-httplistener-without-using-netsh-to-register-a-uri/2782880#2782880
@@ -34,7 +35,7 @@
                     var urlToRegister = $"http://*:{server.CurrentPortUsed}/";
 
                     //registering domain with netsh
-                    ModifyHttpSettings(urlToRegister);
+                    //ModifyHttpSettings(urlToRegister);
 
                     if (server.CanOpenDefaultBrowserOnStart())
                         Process.Start(urls[0]);
@@ -149,7 +150,7 @@
                         Console.WriteLine("");
 
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine("=== EXECUTING CODE THAT LIVES IN EXTERNAL ASSEBLY (DLL) FILE ===");
+                        Console.WriteLine("=== EXECUTING CODE THAT LIVES IN EXTERNAL ASSEMBLY (DLL) FILE ===");
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
 
@@ -224,6 +225,36 @@
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                     };
 
+                    var cheatSheet =
+                                @"
+=== setup commands ===
+cheat <--- display cheat sheet
+e <--- exit app
+exit <--- exit app
+? <---  display cheat sheet
+help <--- help
+config <--- view current server.csv settings
+config [server.csv entry] <--- append to server.csv settings
+me <--- open all endpoints in browser
+verbose off <--- disable logging certain results
+verbose on <--- enable logging certain results
+
+=== inline [command] ===
+code [some inline c# code]  <--- execute c# code inline
+sourcecode [c# file location] <--- execute c# code location in a file
+libcode [.net dll or exe file location] <--- execute a function from a library an executable
+browser [url]  <--- open link in default browser
+[url]  <--- perform a http get request to url
+[get,post,put, etc..] [url] [json arg]   <--- perforn http request  to url
+
+=== control commands ===
+save [file location] [command]  <--- save result of command execution to file
+repeat [count] [interval] [command] <--- repeat command execution one after the other
+repeat [count] parallel [no of threads] [command] <--- repeat command execution in parallel
+save [file location] repeat [count] [interval] [command] <--- repeat command execution one after the other and appending results to file
+save [file location] repeat [count] parallel [no of threads] [command]  <--- repeat command execution in parallel  and appending results to file
+";
+
                     server.Log("ServeMe started successfully");
                     Console.WriteLine("For help using this small shiny tool , enter 'help' or '?' and enter");
 
@@ -238,6 +269,10 @@
                         {
                             entry = Console.ReadLine() ?? "";
                             entry = entry.Trim();
+
+                            if ( string.IsNullOrWhiteSpace(entry?.ToLower()))
+                                continue;
+
                             if (entry?.ToLower() == "e" || entry?.Trim().ToLower() == "exit")
                                 break;
 
@@ -282,8 +317,21 @@
                                     Console.WriteLine($"Result will be saved to {saveLocation}");
                                 }
                             }
+                            if (entry?.ToLower() == "cheat"|| entry?.ToLower() == "?" )
+                            {
+                                Console.ForegroundColor = ConsoleColor.Yellow;
+                                Console.WriteLine("=== CHEAT SHEET ===");
+                                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                                Console.WriteLine(cheatSheet);
 
-                            if (entry?.ToLower() == "help" || entry?.ToLower() == "?")
+                                continue;
+                            }
+                            if (entry?.ToLower() == "clear" || entry?.ToLower() == "cls")
+                            {
+                               Console.Clear();
+                                continue;
+                            }
+                            if (entry?.ToLower() == "help" )
                             {
                                 helpAction();
                                 continue;
@@ -467,8 +515,7 @@
                                                     Console.WriteLine();
                                                     Console.WriteLine(res);
                                                 }
-                                            }
-
+                                            }else
                                             if (executionType == "sourcecode")
                                             {
                                                 Console.WriteLine($"Loading sourcecode from file and executing it {sourceCodeFilename}...");
