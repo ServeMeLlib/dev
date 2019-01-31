@@ -53,7 +53,9 @@
                         Console.WriteLine("=== ME : PORTS I'M USING ===");
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("to open all the ports im using in default browsers do");
+                        Console.ForegroundColor = ConsoleColor.Blue;
                         Console.WriteLine("me");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
 
                         Console.BackgroundColor = ConsoleColor.Black;
                         Console.ForegroundColor = ConsoleColor.Green;
@@ -61,11 +63,20 @@
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("Enter a request into the system in the format [METHOD] [URI] [(optional)REQUEST_PARAM] [(optional)CONTENT_TYPE]. For example :");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                        
                         Console.WriteLine("post http://www.google.com {'name':'cow'} application/json");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("or simply");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("post http://www.google.com {'name':'cow'}");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("or in the case og a get request, simply do");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("http://www.google.com");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("Enter 'e' or 'exit' window to exit");
                         Console.WriteLine("");
                         Console.ForegroundColor = ConsoleColor.Green;
@@ -75,9 +86,15 @@
 
                         Console.WriteLine("You can also run code (C# Language) inline");
                         Console.WriteLine("For example you can do ");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("code return DateTime.Now;");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("Or simply");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("code DateTime.Now;");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("");
 
                         Console.ForegroundColor = ConsoleColor.Green;
@@ -87,20 +104,35 @@
 
                         Console.WriteLine("You can also run stuff repeatedly by prefixing with 'repeat' ");
                         Console.WriteLine("For example to execute code 10 times pausing for 1000 milliseconds inbetween , do");
-                        Console.WriteLine(sample);
+                        Console.ForegroundColor = ConsoleColor.Blue;
+Console.WriteLine(sample);
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        
                         Console.WriteLine("For example to call get www.google.com 10 times pausing for 1000 milliseconds inbetween , do");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("repeat 10 1000 get http://www.google.com");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("Or simply");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("repeat 10 1000 http://www.google.com");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("To run 10 instances of code in parallel with 5 threads");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("repeat 10 parallel 5 code return System.DateTime.Now;");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("");
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("=== RUNNING STUFF IN PARALLEL WITH THREADS ===");
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("To make 10 http get in parallel to google with 5 threads, do ");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("repeat 10 parallel 5 http://www.google.com");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("That's kind of a load test use case, isn't it?");
                         Console.WriteLine("");
                         Console.ForegroundColor = ConsoleColor.Green;
@@ -110,7 +142,10 @@
 
                         Console.WriteLine("You can even execute code that lives externally in a file in plain text");
                         Console.WriteLine("For example, to execute a C# code 50 times in parallel with 49 threads located in a plain text file cs.txt, do ");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("repeat 50 parallel 49 sourcecode cs.txt");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("Simple but kinda cool eh :) Awesome!");
                         Console.WriteLine("");
 
@@ -121,9 +156,16 @@
 
                         Console.WriteLine("You can even execute code that lives externally in an assembly");
                         Console.WriteLine("For example, to execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' 50 times in parallel with 49 threads located in an external assembly file  ServeMe.Tests.dll, do ");
+
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("repeat 50 parallel 49 libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("If you just want to simply execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' located in an external assembly file  ServeMe.Tests.dll, do ");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("Now that's dope!");
                         Console.WriteLine("");
 
@@ -132,15 +174,24 @@
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("To disable inline code result do");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("verbose off");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("You can enable it back by doing");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("verbose on");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("=== OPENING DEFAULT BROWSER ===");
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("to open a link in browser do");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("browser http://www.google.com");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
 
                         Console.WriteLine("=== ROUTE TO LOCAL HOST ON CURRENT PORT ===");
 
@@ -153,16 +204,25 @@
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("To see the current routing configuration in use (i.e both contents of server.csv file and those added into memory) do");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("config");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("To add config (e.g contains google, http://www.google.com ) in memory , do ");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("config contains google, http://www.google.com");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
 
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("=== SAVING RESULTS ===");
 
                         Console.ForegroundColor = ConsoleColor.DarkGray;
                         Console.WriteLine("If you want to save the result of a call to an api or of the execution of code , do");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+
                         Console.WriteLine("save index.html http://www.google.com/");
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
 
                     };
 
