@@ -277,6 +277,8 @@ browser [url]  <--- open link in default browser
 [get,post,put, etc..] [url] [json arg]   <--- perform http request  to url
 
 === control commands ===
+go online <--- this exposes your specific folder over the internet
+go offline <--- this takes your specific folder offline
 save [file location] [command]  <--- save result of command execution to file
 repeat [count] [interval] [command] <--- repeat command execution one after the other
 repeat [count] parallel [no of threads] [command] <--- repeat command execution in parallel
