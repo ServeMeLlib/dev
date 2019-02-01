@@ -24,6 +24,12 @@
 
         internal SimpleHttpServer MyServer { get; set; }
 
+        public string InMemoryConfigurationAppend { get; private set; }
+
+        public string InMemoryConfigurationPrepend { get; private set; }
+
+        public int CurrentPortUsed { get; set; }
+
         public void Dispose()
         {
             this.MyServer.Stop();
@@ -38,22 +44,20 @@
             return instruction;
         }
 
-        public static string InMemoryConfigurationAppend { get; private set; }
-        public static string InMemoryConfigurationPrepend { get; private set; }
-
         public void AppendToInMemoryConfiguration(string config)
         {
-            InMemoryConfigurationAppend = InMemoryConfigurationAppend + "\n" + config;
+            this.InMemoryConfigurationAppend = this.InMemoryConfigurationAppend + "\n" + config;
         }
+
         public void PrependToInMemoryConfiguration(string config)
         {
-            InMemoryConfigurationPrepend =  config+ "\n"+ InMemoryConfigurationPrepend;
+            this.InMemoryConfigurationPrepend = config + "\n" + this.InMemoryConfigurationPrepend;
         }
 
         internal string GetSeUpContent()
         {
-            InMemoryConfigurationPrepend = InMemoryConfigurationPrepend ?? "";
-            InMemoryConfigurationAppend = InMemoryConfigurationAppend ?? "";
+            this.InMemoryConfigurationPrepend = this.InMemoryConfigurationPrepend ?? "";
+            this.InMemoryConfigurationAppend = this.InMemoryConfigurationAppend ?? "";
             if (!string.IsNullOrEmpty(this.ServerCsv) || this.FileExists(this.ServerFileName))
             {
                 string content = this.ServerCsv ?? this.ReadAllTextFromFile(this.ServerFileName);
@@ -64,10 +68,10 @@
                     content = this.ReadAllTextFromFile(alternatePath);
                 }
 
-                return InMemoryConfigurationPrepend + "\n" + content + "\n" + InMemoryConfigurationAppend;
+                return this.InMemoryConfigurationPrepend + "\n" + content + "\n" + this.InMemoryConfigurationAppend;
             }
 
-            return string.Empty;
+            return this.InMemoryConfigurationPrepend + "\n" + this.InMemoryConfigurationAppend;
         }
 
         int ExtractFromSettings(string match, string content, out string[] args)
@@ -203,7 +207,7 @@
             try
             {
                 this.MyServer = new SimpleHttpServer(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory()), this, port ?? this.GetPortNumberFromSettings());
-              this.CurrentPortUsed=  this.MyServer.Port;
+                this.CurrentPortUsed = this.MyServer.Port;
                 Console.WriteLine("Serving!");
                 Console.WriteLine("");
                 Console.WriteLine("If you are using server.csv then note that the csv format is :");
@@ -275,7 +279,5 @@
                 return new List<string>();
             }
         }
-
-        public int CurrentPortUsed { get; set; }
     }
 }

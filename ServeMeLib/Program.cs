@@ -16,12 +16,56 @@
 
     class Program
     {
-        //http://www.bizcoder.com/these-8-lines-of-code-can-make-debugging-your-asp-net-web-api-a-little-bit-easier
-        //todo check autocomplete https://gist.github.com/BKSpurgeon/7f6f28e158032534615773a9a1f73a10
-        //netsh http add urlacl url=http://+:62426/ user=SAPC\Sa
-        //https://stackoverflow.com/questions/2583347/c-sharp-httplistener-without-using-netsh-to-register-a-uri/2782880#2782880
-        static readonly ConcurrentQueue<KeyValuePair<string, string>> toExecuteQueue = new ConcurrentQueue<KeyValuePair<string, string>>();
+       
 
+        static void Main(string[] args)
+        {
+            StartProcessQueue();
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+
+            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                TryRunAsAdmin(args);
+            else
+                using (server = new ServeMe())
+                {
+                    urls = server.Start();
+
+                    string urlToRegister = $"http://*:{server.CurrentPortUsed}/";
+
+                    //registering domain with netsh
+                    //ModifyHttpSettings(urlToRegister);
+
+                    if (server.CanOpenDefaultBrowserOnStart())
+                        Process.Start(urls[0]);
+
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    server.Log("ServeMe started successfully");
+                    Console.WriteLine("For help using this small shiny tool , enter 'help' or '?' and enter");
+
+                    do
+                    {
+                        Console.BackgroundColor = ConsoleColor.Black;
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        try
+                        {
+                            string entry = Console.ReadLine() ?? "";
+
+                            if (entry?.Trim()?.ToLower() == "e" || entry?.Trim().ToLower() == "exit")
+                                break;
+
+                            RunInstruction(entry);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine(e.Message, e.InnerException?.Message);
+                        }
+                    }
+                    while (true);
+                }
+        }
+ static readonly ConcurrentQueue<KeyValuePair<string, string>> toExecuteQueue = new ConcurrentQueue<KeyValuePair<string, string>>();
         static readonly ConcurrentDictionary<string, string> pathsWatched = new ConcurrentDictionary<string, string>();
         static bool printResult = true;
         static List<string> urls = new List<string>();
@@ -245,55 +289,6 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 ";
 
         public static Process OnlineProcess { get; set; }
-
-        static void Main(string[] args)
-        {
-            StartProcessQueue();
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
-
-            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
-                TryRunAsAdmin(args);
-            else
-                using (server = new ServeMe())
-                {
-                    urls = server.Start();
-
-                    string urlToRegister = $"http://*:{server.CurrentPortUsed}/";
-
-                    //registering domain with netsh
-                    //ModifyHttpSettings(urlToRegister);
-
-                    if (server.CanOpenDefaultBrowserOnStart())
-                        Process.Start(urls[0]);
-
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    server.Log("ServeMe started successfully");
-                    Console.WriteLine("For help using this small shiny tool , enter 'help' or '?' and enter");
-
-                    do
-                    {
-                        Console.BackgroundColor = ConsoleColor.Black;
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        try
-                        {
-                            string entry = Console.ReadLine() ?? "";
-
-                            if (entry?.Trim()?.ToLower() == "e" || entry?.Trim().ToLower() == "exit")
-                                break;
-
-                            RunInstruction(entry);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine(e.Message, e.InnerException?.Message);
-                        }
-                    }
-                    while (true);
-                }
-        }
-
         static void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             Cleanup();
@@ -428,12 +423,9 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                     () =>
                     {
                         OnlineProcess = new Process();
-
                         OnlineProcess.StartInfo.FileName = @"cmd.exe";
                         OnlineProcess.StartInfo.Arguments = $@"/c C:\Users\{Environment.UserName}\AppData\Roaming\npm\node_modules\ngrok\bin\ngrok.exe http {server.CurrentPortUsed}";
-
                         OnlineProcess.Start();
-
                         Console.WriteLine("IMPORTANT: Remember to run 'go offline' to take your server offline!");
                         OnlineProcess.WaitForExit();
                     });
@@ -456,22 +448,18 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
             if (entry.ToLower().StartsWith("watchresult "))
             {
-                entry = entry.Remove(0, "watchresult".Length).Trim();
-                string result = entry.Split(' ')[0].Trim();
+                //entry = entry.Remove(0, "watchresult".Length).Trim();
+                //string result = entry.Split(' ')[0].Trim();
 
-                if (string.IsNullOrEmpty(result))
-                {
-                    Console.WriteLine("No result supplied");
-                    return true;
-                }
+                //if (string.IsNullOrEmpty(result))
+                //{
+                //    Console.WriteLine("No result supplied");
+                //    return true;
+                //}
 
-                entry = entry.Remove(0, result.Length).Trim();
-
-                // file_created(null, new FileSystemEventArgs(WatcherChangeTypes.Changed,));
-                // pathsWatched[pathToWatch] = entry;
+                //entry = entry.Remove(0, result.Length).Trim();
 
                 Console.WriteLine("Not implemented yet");
-
                 return true;
             }
 
@@ -647,6 +635,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                             if (executionType == "code")
                             {
                                 object res = SimpleHttpServer.Execute(entry);
+                                
                                 Console.BackgroundColor = ConsoleColor.White;
                                 Console.ForegroundColor = ConsoleColor.Black;
 
@@ -682,11 +671,8 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                                 Console.BackgroundColor = ConsoleColor.White;
                                 Console.ForegroundColor = ConsoleColor.Black;
                                 TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
-                                //if (printResult)
-                                {
-                                    // Console.WriteLine();
-                                    Console.WriteLine(res);
-                                }
+                                // Console.WriteLine();
+                                Console.WriteLine(res);
                             }
                             else
                             {

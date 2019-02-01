@@ -16,6 +16,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CSharp;
+
     // MIT License - Copyright (c) 2016 Can Güney Aksakalli
     // https://aksakalli.github.io/2014/02/24/simple-http-server-with-csparp.html
 
@@ -153,29 +154,30 @@
         public void Stop()
         {
             this.ServeMe.Log("Stopping server ...");
-            this._serverThread.Abort();
+
             this._listener.Stop();
             client.Dispose();
+            this._serverThread.Abort();
         }
 
         void Listen()
         {
             //https://github.com/arshad115/HttpListenerServer
             /*
-            A URI prefix string is composed of a scheme (http or https), a host, an optional port, 
-            and an optional path. An example of a complete prefix string is "http://www.contoso.com:8080/customerData/". 
-            Prefixes must end in a forward slash ("/"). The HttpListener object with the prefix that most closely matches 
-            a requested URI responds to the request. Multiple HttpListener objects cannot add the same prefix; a Win32Exception 
-            exception is thrown if a HttpListener adds a prefix that is already in use. When a port is specified, the host element 
-            can be replaced with "*" to indicate that the HttpListener accepts requests sent to the port if the requested URI 
-            does not match any other prefix. For example, to receive all requests sent to port 8080 when the requested URI is 
-            not handled by any HttpListener, the prefix is "http://*:8080/". Similarly, to specify that the HttpListener accepts 
-            all requests sent to a port, replace the host element with the "+" character, "https://+:8080". 
+            A URI prefix string is composed of a scheme (http or https), a host, an optional port,
+            and an optional path. An example of a complete prefix string is "http://www.contoso.com:8080/customerData/".
+            Prefixes must end in a forward slash ("/"). The HttpListener object with the prefix that most closely matches
+            a requested URI responds to the request. Multiple HttpListener objects cannot add the same prefix; a Win32Exception
+            exception is thrown if a HttpListener adds a prefix that is already in use. When a port is specified, the host element
+            can be replaced with "*" to indicate that the HttpListener accepts requests sent to the port if the requested URI
+            does not match any other prefix. For example, to receive all requests sent to port 8080 when the requested URI is
+            not handled by any HttpListener, the prefix is "http://*:8080/". Similarly, to specify that the HttpListener accepts
+            all requests sent to a port, replace the host element with the "+" character, "https://+:8080".
             The "*" and "+" characters can be present in prefixes that include paths.
             */
             this._listener = new HttpListener();
             this._listener.Prefixes.Add("http://*:" + this._port.ToString() + "/");
-            this._listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
+            //this._listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
             //this._listener.Prefixes.Add("http://+:80/");
             this.ServeMe.Log($"About to start listening on port {this._port}");
             this._listener.Start();

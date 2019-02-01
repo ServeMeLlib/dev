@@ -67,7 +67,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="NetAclChecker.cs" />
-    <Compile Include="ProgramX.cs" />
     <Compile Include="ServeMe.cs" />
     <Compile Include="SimpleHttpServer.cs" />
     <Compile Include="Program.cs" />
