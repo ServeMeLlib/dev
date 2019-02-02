@@ -1,0 +1,5 @@
+app openDefaultBrowserOnStartUp
+equalto / ,sourcecode csharp code1.cs,get
+equalto /code1 ,sourcecode csharp code1.cs,get
+equalto /code2 ,sourcecode csharp code2.cs,get
+equalto /code3 ,sourcecode csharp code3.cs,get

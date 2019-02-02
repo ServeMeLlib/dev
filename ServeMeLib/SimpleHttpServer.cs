@@ -230,6 +230,9 @@
                     if (string.IsNullOrEmpty(s))
                         continue;
 
+                    if (s.StartsWith("//"))
+                        continue;
+
                     string[] parts = s.Split(',');
                     if (parts.Length < 2)
                         continue;
