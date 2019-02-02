@@ -92,6 +92,15 @@ to return http://www.google.com content  when only GET and the path and query do
 
 ---- Ok, how about this, imagine you'd like to call a method from an assembly from a dll file. Here is how to do it in server.csv `getSome,assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get` Inside unit tests you can use this helper method to compose the execution instruction `string instruction = ServeMe.GetMethodExecutionInstruction(this.GetType(), methodName, arg);`
 
+---- Ok, finally, how about this, imagine you'd like to execute a c sharp script that lives in a file. Here is how to do it in server.csv `getSome,sourcecode csharp xyz.txt w,get` . This will execute the script when ever a get request is made for /getSome
+The script can be something like this
+`return DateTime.UtcNow;` inside a file called, say, code.txt
+The server entry will be 
+`getSome,sourcecode csharp code.txt,get`
+
+so a get to /getsome will return the value of  DateTime.UtcNow;
+
+
 
 ----
 This is how a sample server.csv looks like https://github.com/ServeMeLlib/dev/blob/master/server.csv

@@ -14,11 +14,9 @@
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
 
-    class Program
+    internal class Program
     {
-       
-
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             StartProcessQueue();
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
@@ -29,19 +27,14 @@
                 using (server = new ServeMe())
                 {
                     urls = server.Start();
-
-                    string urlToRegister = $"http://*:{server.CurrentPortUsed}/";
-
-                    //registering domain with netsh
-                    //ModifyHttpSettings(urlToRegister);
-
+                    
                     if (server.CanOpenDefaultBrowserOnStart())
                         Process.Start(urls[0]);
 
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.BackgroundColor = ConsoleColor.Black;
                     server.Log("ServeMe started successfully");
-                    Console.WriteLine("For help using this small shiny tool , enter 'help' or '?' and enter");
+                    ConsoleWriteLine("For help using this small shiny tool , enter 'help' or '?' and enter");
 
                     do
                     {
@@ -59,202 +52,161 @@
                         catch (Exception e)
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine(e.Message, e.InnerException?.Message);
+                            Console.WriteLine(e.Message+" "+ e.InnerException?.Message);
                         }
                     }
                     while (true);
                 }
         }
- static readonly ConcurrentQueue<KeyValuePair<string, string>> toExecuteQueue = new ConcurrentQueue<KeyValuePair<string, string>>();
-        static readonly ConcurrentDictionary<string, string> pathsWatched = new ConcurrentDictionary<string, string>();
-        static bool printResult = true;
-        static List<string> urls = new List<string>();
-        static ServeMe server;
 
-        static readonly object padlock = new object();
+        private static readonly ConcurrentQueue<KeyValuePair<string, string>> ToExecuteQueue = new ConcurrentQueue<KeyValuePair<string, string>>();
+        private static readonly ConcurrentDictionary<string, string> PathsWatched = new ConcurrentDictionary<string, string>();
+        private static bool printResult = true;
+        private static List<string> urls = new List<string>();
+        private static ServeMe server;
 
-        static readonly Action helpAction = () =>
+        private static readonly object Padlock = new object();
+
+        public static void PrintDocTitle(string title)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
+            ConsoleWriteLine(title, () =>
+            {
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.Green;
+            });
+        }
 
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== ME : PORTS I'M USING ===");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("to open all the ports im using in default browsers do");
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine("me");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
+        public static void PrintDoc(string sample)
+        {
+            ConsoleWriteLine(sample, () =>
+            {
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+            });
+        }
 
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== MAKING HTTP CALLS TO REMOTE SERVER ( WITH DATA ) ===");
+        public static void PrintCode(string sample)
+        {
+            ConsoleWriteLine(sample, () =>
+            {
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.Green;
+            });
+        }
 
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("Enter a request into the system in the format [METHOD] [URI] [(optional)REQUEST_PARAM] [(optional)CONTENT_TYPE]. For example :");
-            Console.ForegroundColor = ConsoleColor.Blue;
+        public static void PrintCodeWithDoc(string sample, params string[] dec)
+        {
+            dec = dec ?? new string[] { };
+            foreach (string s in dec)
+            {
+                ConsoleWriteLine(s, () =>
+                {
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.ForegroundColor = ConsoleColor.Green;
+                });
+            }
 
-            Console.WriteLine("post http://www.google.com {'name':'cow'} application/json");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("or simply");
-            Console.ForegroundColor = ConsoleColor.Blue;
+            ConsoleWriteLine(sample, () =>
+            {
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.Green;
+            });
+        }
 
-            Console.WriteLine("post http://www.google.com {'name':'cow'}");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("or in the case og a get request, simply do");
-            Console.ForegroundColor = ConsoleColor.Blue;
+        public static void ConsoleWriteLine(string msg, Action setup = null)
+        {
+            var orF = Console.ForegroundColor;
+            var orB = Console.BackgroundColor;
+            setup?.Invoke();
+            Console.WriteLine(msg);
+            Console.ForegroundColor = orF;
+            Console.BackgroundColor = orB;
+        }
 
-            Console.WriteLine("http://www.google.com");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("Enter 'e' or 'exit' window to exit");
-            Console.WriteLine("");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== EXECUTING CODE INLINE ===");
+        private static readonly Action helpAction = () =>
+           {
+               PrintDocTitle("=== ME : PORTS I'M USING ===");
+               PrintDoc("to open all the ports im using in default browsers do");
+               PrintCode("me");
 
-            Console.ForegroundColor = ConsoleColor.DarkGray;
+               PrintDocTitle("=== MAKING HTTP CALLS TO REMOTE SERVER ( WITH DATA ) ===");
+               PrintDoc("Enter a request into the system in the format [METHOD] [URI] [(optional)REQUEST_PARAM] [(optional)CONTENT_TYPE]. For example :");
+               PrintCode("post http://www.google.com {'name':'cow'} application/json");
+               PrintDoc("or simply");
+               PrintCode("post http://www.google.com {'name':'cow'}");
+               PrintDoc("or in the case og a get request, simply do");
+               ConsoleWriteLine("http://www.google.com");
+               PrintDoc("Enter 'e' or 'exit' window to exit");
+               ConsoleWriteLine("");
 
-            Console.WriteLine("You can also run code (C# Language) inline");
-            Console.WriteLine("For example you can do ");
-            Console.ForegroundColor = ConsoleColor.Blue;
+               PrintDocTitle("=== EXECUTING CODE INLINE ===");
+               PrintDoc("You can also run code (C# Language) inline");
+               PrintDoc("For example you can do ");
+               PrintCode("code return DateTime.Now;");
+               PrintDoc("Or simply");
+               PrintCode("code DateTime.Now;");
+               ConsoleWriteLine("");
 
-            Console.WriteLine("code return DateTime.Now;");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("Or simply");
-            Console.ForegroundColor = ConsoleColor.Blue;
+               PrintDocTitle("=== EXECUTING STUFF IN REPITITION ===");
+               PrintDoc("You can also run stuff repeatedly by prefixing with 'repeat' ");
+               PrintDoc("For example to execute code 10 times pausing for 1000 milliseconds inbetween , do");
+               PrintCode("repeat 10 1000 code return System.DateTime.Now;");
+               PrintDoc("For example to call get www.google.com 10 times pausing for 1000 milliseconds inbetween , do");
+               PrintCode("repeat 10 1000 get http://www.google.com");
+               PrintDoc("Or simply");
+               PrintCode("repeat 10 1000 http://www.google.com");
+               PrintDoc("To run 10 instances of code in parallel with 5 threads");
+               PrintCode("repeat 10 parallel 5 code return System.DateTime.Now;");
+               ConsoleWriteLine("");
 
-            Console.WriteLine("code DateTime.Now;");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("");
+               ConsoleWriteLine("=== RUNNING STUFF IN PARALLEL WITH THREADS ===");
+               PrintDoc("To make 10 http get in parallel to google with 5 threads, do ");
+               PrintCode("repeat 10 parallel 5 http://www.google.com");
+               PrintDoc("That's kind of a load test use case, isn't it?");
+               ConsoleWriteLine("");
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== EXECUTING STUFF IN REPITITION ===");
+               PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL PLAIN TEXT FILE ===");
+               PrintDoc("You can even execute code that lives externally in a file in plain text");
+               PrintDoc("For example, to execute a C# code 50 times in parallel with 49 threads located in a plain text file cs.txt, do ");
+               PrintCode("repeat 50 parallel 49 sourcecode cs.txt");
+               PrintDoc("Simple but kinda cool eh :) Awesome!");
+               ConsoleWriteLine("");
 
-            Console.ForegroundColor = ConsoleColor.DarkGray;
+               PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL ASSEMBLY (DLL) FILE ===");
+               PrintDoc("You can even execute code that lives externally in an assembly");
+               PrintDoc("For example, to execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' 50 times in parallel with 49 threads located in an external assembly file  ServeMe.Tests.dll, do ");
+               PrintCode("repeat 50 parallel 49 libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+               PrintDoc("If you just want to simply execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' located in an external assembly file  ServeMe.Tests.dll, do ");
+               PrintCode("libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+               PrintDoc("Now that's dope!");
+               ConsoleWriteLine("");
 
-            Console.WriteLine("You can also run stuff repeatedly by prefixing with 'repeat' ");
-            Console.WriteLine("For example to execute code 10 times pausing for 1000 milliseconds inbetween , do");
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine("repeat 10 1000 code return System.DateTime.Now;");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
+               PrintDocTitle("=== DISABLING VERBOSE MODE ===");
+               PrintDoc("To disable inline code result do");
+               ConsoleWriteLine("verbose off");
+               PrintDoc("You can enable it back by doing");
+               ConsoleWriteLine("verbose on");
 
-            Console.WriteLine("For example to call get www.google.com 10 times pausing for 1000 milliseconds inbetween , do");
-            Console.ForegroundColor = ConsoleColor.Blue;
+               PrintDocTitle("=== OPENING DEFAULT BROWSER ===");
+               PrintDoc("to open a link in browser do");
+               PrintCode("browser http://www.google.com");
 
-            Console.WriteLine("repeat 10 1000 get http://www.google.com");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("Or simply");
-            Console.ForegroundColor = ConsoleColor.Blue;
+               PrintDocTitle("=== ROUTE TO LOCAL HOST ON CURRENT PORT ===");
+               PrintDoc("You don't have to enter the host while entering url. Local host will be asumed so if you do 'browser /meandyou' it will open");
+               PrintDoc("the default browser to location http://locahost:[PORT]/meandyou");
 
-            Console.WriteLine("repeat 10 1000 http://www.google.com");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("To run 10 instances of code in parallel with 5 threads");
-            Console.ForegroundColor = ConsoleColor.Blue;
+               PrintDocTitle("=== CURRENT CONFIGURATION / SETUP ===");
+               PrintDoc("To see the current routing configuration in use (i.e both contents of server.csv file and those added into memory) do");
+               PrintCode("config");
+               ConsoleWriteLine("To add config (e.g contains google, http://www.google.com ) in memory , do ");
+               ConsoleWriteLine("config contains google, http://www.google.com");
 
-            Console.WriteLine("repeat 10 parallel 5 code return System.DateTime.Now;");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== RUNNING STUFF IN PARALLEL WITH THREADS ===");
+               PrintDocTitle("=== SAVING RESULTS ===");
+               PrintDoc("If you want to save the result of a call to an api or of the execution of code , do");
+               PrintCode("save index.html http://www.google.com/");
+           };
 
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("To make 10 http get in parallel to google with 5 threads, do ");
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("repeat 10 parallel 5 http://www.google.com");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("That's kind of a load test use case, isn't it?");
-            Console.WriteLine("");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== EXECUTING CODE THAT LIVES IN EXTERNAL PLAIN TEXT FILE ===");
-
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-
-            Console.WriteLine("You can even execute code that lives externally in a file in plain text");
-            Console.WriteLine("For example, to execute a C# code 50 times in parallel with 49 threads located in a plain text file cs.txt, do ");
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("repeat 50 parallel 49 sourcecode cs.txt");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("Simple but kinda cool eh :) Awesome!");
-            Console.WriteLine("");
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== EXECUTING CODE THAT LIVES IN EXTERNAL ASSEMBLY (DLL) FILE ===");
-
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-
-            Console.WriteLine("You can even execute code that lives externally in an assembly");
-            Console.WriteLine("For example, to execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' 50 times in parallel with 49 threads located in an external assembly file  ServeMe.Tests.dll, do ");
-
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("repeat 50 parallel 49 libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("If you just want to simply execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' located in an external assembly file  ServeMe.Tests.dll, do ");
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("Now that's dope!");
-            Console.WriteLine("");
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== DISABLING VERBOSE MODE ===");
-
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("To disable inline code result do");
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("verbose off");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("You can enable it back by doing");
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("verbose on");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== OPENING DEFAULT BROWSER ===");
-
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("to open a link in browser do");
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("browser http://www.google.com");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-
-            Console.WriteLine("=== ROUTE TO LOCAL HOST ON CURRENT PORT ===");
-
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("You don't have to enter the host while entering url. Local host will be asumed so if you do 'browser /meandyou' it will open");
-            Console.WriteLine("the default browser to location http://locahost:[PORT]/meandyou");
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== CURRENT CONFIGURATION / SETUP ===");
-
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("To see the current routing configuration in use (i.e both contents of server.csv file and those added into memory) do");
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("config");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("To add config (e.g contains google, http://www.google.com ) in memory , do ");
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("config contains google, http://www.google.com");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("=== SAVING RESULTS ===");
-
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("If you want to save the result of a call to an api or of the execution of code , do");
-            Console.ForegroundColor = ConsoleColor.Blue;
-
-            Console.WriteLine("save index.html http://www.google.com/");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-        };
-
-        static readonly string cheatSheet =
+        private static readonly string cheatSheet =
             @"
 === setup commands ===
 cheat <--- display cheat sheet
@@ -291,12 +243,13 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 ";
 
         public static Process OnlineProcess { get; set; }
-        static void CurrentDomain_ProcessExit(object sender, EventArgs e)
+
+        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             Cleanup();
         }
 
-        static bool RunInstruction(string entry)
+        private static bool RunInstruction(string entry)
         {
             entry = entry.Trim();
             string saveLocation = null;
@@ -311,47 +264,47 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 if (string.IsNullOrEmpty(saveLocation) || !isValidFileName)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"Save location {saveLocation} not specified or is invalid");
+                    ConsoleWriteLine($"Save location {saveLocation} not specified or is invalid");
                     return true;
                 }
                 else
                 {
                     if (File.Exists(saveLocation))
                     {
-                        Console.WriteLine($"File already exist. Are you happy to override file  {saveLocation}?");
-                        Console.WriteLine("Enter \'y\' for yes and \'n\' for no. If you choose \'y\' the file will be deleted immediately! :");
-                        Console.WriteLine("Enter \'y\' for yes and \'n\' for no :");
+                        ConsoleWriteLine($"File already exist. Are you happy to override file  {saveLocation}?");
+                        ConsoleWriteLine("Enter \'y\' for yes and \'n\' for no. If you choose \'y\' the file will be deleted immediately! :");
+                        ConsoleWriteLine("Enter \'y\' for yes and \'n\' for no :");
                         string answer = Console.ReadKey().KeyChar.ToString();
                         answer = answer.Trim().ToLower();
                         if (answer == "y")
                         {
-                            Console.WriteLine($"File {saveLocation} will be overriden");
+                            ConsoleWriteLine($"File {saveLocation} will be overriden");
                             File.Delete(saveLocation);
                         }
                         else if (answer == "n")
                         {
-                            Console.WriteLine("Good! Nothing will happen");
+                            ConsoleWriteLine("Good! Nothing will happen");
                             return true;
                         }
                         else
                         {
-                            Console.WriteLine("I\'ll take that as a \'no\'. Nothing will happen");
+                            ConsoleWriteLine("I\'ll take that as a \'no\'. Nothing will happen");
                             return true;
                         }
                     }
 
                     entry = entry.Remove(0, saveLocation.Length).Trim();
 
-                    Console.WriteLine($"Result will be saved to {saveLocation}");
+                    ConsoleWriteLine($"Result will be saved to {saveLocation}");
                 }
             }
 
             if (entry?.ToLower() == "cheat" || entry?.ToLower() == "?")
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("=== CHEAT SHEET ===");
+                ConsoleWriteLine("=== CHEAT SHEET ===");
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine(cheatSheet);
+                ConsoleWriteLine(cheatSheet);
 
                 return true;
             }
@@ -375,7 +328,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
                 if (string.IsNullOrEmpty(pathToWatch))
                 {
-                    Console.WriteLine("No path supplied");
+                    ConsoleWriteLine("No path supplied");
                     return true;
                 }
 
@@ -392,8 +345,8 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 _watcher.Renamed += new RenamedEventHandler(file_created);
                 _watcher.IncludeSubdirectories = true;
                 _watcher.EnableRaisingEvents = true;
-                pathsWatched[pathToWatch] = entry;
-                Console.WriteLine($"You're all set! When ever anything changes in the path '{pathToWatch}' the command '{entry}' will be executed.");
+                PathsWatched[pathToWatch] = entry;
+                ConsoleWriteLine($"You're all set! When ever anything changes in the path '{pathToWatch}' the command '{entry}' will be executed.");
                 return true;
             }
 
@@ -409,13 +362,13 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 Process pNpmRunDist = Process.Start(psiNpmRunDist);
                 pNpmRunDist.WaitForExit();
 
-                Console.WriteLine("Putting your server online now...");
+                ConsoleWriteLine("Putting your server online now...");
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("In the window that will open, look for the url that looks like xxxx.ngrok.io, that will be your public url");
-                Console.WriteLine("Enter 'y' to confirm");
+                ConsoleWriteLine("In the window that will open, look for the url that looks like xxxx.ngrok.io, that will be your public url");
+                ConsoleWriteLine("Enter 'y' to confirm");
                 if (Console.ReadKey().KeyChar.ToString() != "y")
                 {
-                    Console.WriteLine("Going online aborted");
+                    ConsoleWriteLine("Going online aborted");
                     return true;
                 }
 
@@ -428,7 +381,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                         OnlineProcess.StartInfo.FileName = @"cmd.exe";
                         OnlineProcess.StartInfo.Arguments = $@"/c C:\Users\{Environment.UserName}\AppData\Roaming\npm\node_modules\ngrok\bin\ngrok.exe http {server.CurrentPortUsed}";
                         OnlineProcess.Start();
-                        Console.WriteLine("IMPORTANT: Remember to run 'go offline' to take your server offline!");
+                        ConsoleWriteLine("IMPORTANT: Remember to run 'go offline' to take your server offline!");
                         OnlineProcess.WaitForExit();
                     });
                 return true;
@@ -455,24 +408,24 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
                 //if (string.IsNullOrEmpty(result))
                 //{
-                //    Console.WriteLine("No result supplied");
+                //    ConsoleWriteLine("No result supplied");
                 //    return true;
                 //}
 
                 //entry = entry.Remove(0, result.Length).Trim();
 
-                Console.WriteLine("Not implemented yet");
+                ConsoleWriteLine("Not implemented yet");
                 return true;
             }
 
             if (entry.ToLower() == "config")
             {
-                Console.WriteLine("Current server configuration is:");
+                ConsoleWriteLine("Current server configuration is:");
                 Console.BackgroundColor = ConsoleColor.Black;
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
 
                 string config = server.GetSeUpContent();
-                Console.WriteLine($"{config}");
+                ConsoleWriteLine($"{config}");
 
                 TrySaveResult(saveLocation, config);
                 return true;
@@ -484,7 +437,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 if (!string.IsNullOrEmpty(entry))
                 {
                     server.AppendToInMemoryConfiguration(entry);
-                    Console.WriteLine($"The entry '{entry}' has been appended to the configuration");
+                    ConsoleWriteLine($"The entry '{entry}' has been appended to the configuration");
                 }
 
                 return true;
@@ -493,20 +446,20 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             if (entry?.ToLower() == "me")
             {
                 Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine("Server endpoints : ");
+                ConsoleWriteLine("Server endpoints : ");
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
                 foreach (string url in urls)
                 {
-                    Console.WriteLine("Opening browser to location " + url);
+                    ConsoleWriteLine("Opening browser to location " + url);
                     Process.Start(url);
                 }
 
                 Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine($"Current server port is {server.GetPortNumberFromSettings()}");
-                Console.WriteLine("Current server configuration is:");
+                ConsoleWriteLine($"Current server port is {server.GetPortNumberFromSettings()}");
+                ConsoleWriteLine("Current server configuration is:");
                 Console.BackgroundColor = ConsoleColor.Black;
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine($"{server.GetSeUpContent()}");
+                ConsoleWriteLine($"{server.GetSeUpContent()}");
 
                 return true;
             }
@@ -514,14 +467,14 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             if (entry?.ToLower() == "verbose off")
             {
                 printResult = false;
-                Console.WriteLine("Result of execution will no longer be printed. To reverse this , enter 'verbose on'");
+                ConsoleWriteLine("Result of execution will no longer be printed. To reverse this , enter 'verbose on'");
                 return true;
             }
 
             if (entry?.ToLower() == "verbose on")
             {
                 printResult = true;
-                Console.WriteLine("Result of execution will now be printed. To reverse this , enter 'verbose off'");
+                ConsoleWriteLine("Result of execution will now be printed. To reverse this , enter 'verbose off'");
                 return true;
             }
 
@@ -547,7 +500,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 if (!int.TryParse(count, out repeatCount))
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"Specified repeat counter '{count}' is an invalid number. I was expecting something like this :  repeat 10 1000 code return System.DateTime.Now;");
+                    ConsoleWriteLine($"Specified repeat counter '{count}' is an invalid number. I was expecting something like this :  repeat 10 1000 code return System.DateTime.Now;");
                     return true;
                 }
 
@@ -562,7 +515,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                     if (!int.TryParse(maxParallel, out maxDegreeOfParallelism))
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"Specified max degree of parallelism '{sleepInterval}'ms is invalid. I was expecting something like this :  repeat 10 parallel 5 code return System.DateTime.Now;");
+                        ConsoleWriteLine($"Specified max degree of parallelism '{sleepInterval}'ms is invalid. I was expecting something like this :  repeat 10 parallel 5 code return System.DateTime.Now;");
                         return true;
                     }
                 }
@@ -573,7 +526,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                     if (!int.TryParse(sleepInterval, out sleepInt))
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"Specified sleep interval in (ms) '{sleepInterval}'ms is invalid. I was expecting something like this :  repeat 10 1000 code return System.DateTime.Now; ");
+                        ConsoleWriteLine($"Specified sleep interval in (ms) '{sleepInterval}'ms is invalid. I was expecting something like this :  repeat 10 1000 code return System.DateTime.Now; ");
                         return true;
                     }
                 }
@@ -637,20 +590,20 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                             if (executionType == "code")
                             {
                                 object res = SimpleHttpServer.Execute(entry);
-                                
+
                                 Console.BackgroundColor = ConsoleColor.White;
                                 Console.ForegroundColor = ConsoleColor.Black;
 
                                 TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
                                 // if (printResult)
                                 {
-                                    //  Console.WriteLine();
+                                    //  ConsoleWriteLine();
                                     Console.WriteLine(res);
                                 }
                             }
                             else if (executionType == "sourcecode")
                             {
-                                Console.WriteLine($"Loading sourcecode from file and executing it {sourceCodeFilename}...");
+                                ConsoleWriteLine($"Loading sourcecode from file and executing it {sourceCodeFilename}...");
                                 string source = File.ReadAllText(sourceCodeFilename);
 
                                 object res = SimpleHttpServer.Execute(source);
@@ -659,21 +612,21 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                                 TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
                                 // if (printResult)
                                 {
-                                    // Console.WriteLine();
+                                    // ConsoleWriteLine();
 
                                     Console.WriteLine(res);
                                 }
                             }
                             else if (executionType == "libcode")
                             {
-                                Console.WriteLine($"Loading library file and executing it {assemblyFilename}...");
+                                ConsoleWriteLine($"Loading library file and executing it {assemblyFilename}...");
 
                                 //e.g file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w
                                 object res = SimpleHttpServer.InvokeMethod(assemblyFilename, className, methodName, argument);
                                 Console.BackgroundColor = ConsoleColor.White;
                                 Console.ForegroundColor = ConsoleColor.Black;
                                 TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
-                                // Console.WriteLine();
+                                // ConsoleWriteLine();
                                 Console.WriteLine(res);
                             }
                             else
@@ -696,7 +649,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
                                 if (specifiedMethod == "browser")
                                 {
-                                    Console.WriteLine("Opening browser to location " + url);
+                                    ConsoleWriteLine("Opening browser to location " + url);
                                     Process.Start(url.ToString());
                                 }
                                 else
@@ -711,29 +664,29 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                                         mediaType = entryParts[3];
                                     if (entryParts.Length > 2)
                                         request.Content = new StringContent(param, Encoding.UTF8, mediaType);
-                                    Console.WriteLine();
+                                 
                                     Console.BackgroundColor = ConsoleColor.Black;
                                     Console.ForegroundColor = ConsoleColor.Green;
-                                    Console.WriteLine($"Sending request with '{method}' to '{url}' as '{mediaType}' with param '{param}' ....");
+                                    ConsoleWriteLine($"Sending request with '{method}' to '{url}' as '{mediaType}' with param '{param}' ....");
                                     HttpResponseMessage result = server.MyServer.Send(
                                         request,
                                         server.Log,
                                         e =>
                                         {
                                             Console.ForegroundColor = ConsoleColor.Red;
-                                            Console.WriteLine(e.Message, e.InnerException?.Message);
+                                            Console.WriteLine(e.Message+" "+ e.InnerException?.Message);
                                         });
                                     Console.BackgroundColor = ConsoleColor.Black;
                                     Console.ForegroundColor = ConsoleColor.Gray;
-                                    Console.WriteLine($"Obtaining '{method}' response from '{url}' .... ");
+                                    ConsoleWriteLine($"Obtaining '{method}' response from '{url}' .... ");
                                     Console.BackgroundColor = ConsoleColor.White;
                                     Console.ForegroundColor = ConsoleColor.Black;
                                     TrySaveResult(saveLocation, result.Content.ReadAsStringAsync().Result);
-                                    Console.WriteLine();
+                                   
                                     if (printResult)
-                                        Console.WriteLine(result.Content.ReadAsStringAsync().Result);
+                                        ConsoleWriteLine(result.Content.ReadAsStringAsync().Result);
                                     else
-                                        Console.WriteLine($"Completed {webpage}");
+                                        ConsoleWriteLine($"Completed {webpage}");
                                 }
                             }
                         }
@@ -751,7 +704,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
                         {
                             if (printResult)
-                                Console.WriteLine(
+                                ConsoleWriteLine(
                                     isForever ? $"Will run in next {sleepInt} ms (this will go on forever) ..." : $"Will run in next {sleepInt} ms ({repeatCount} more times to go)...");
                         }
 
@@ -762,11 +715,11 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.BackgroundColor = ConsoleColor.Black;
-            Console.WriteLine("OPERATION COMPLETED!");
+            ConsoleWriteLine("OPERATION COMPLETED!");
             return false;
         }
 
-        static void Cleanup()
+        private static void Cleanup()
         {
             if (OnlineProcess != null && !OnlineProcess.HasExited)
             {
@@ -786,36 +739,36 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             }
         }
 
-        static void file_created(object sender, FileSystemEventArgs e)
+        private static void file_created(object sender, FileSystemEventArgs e)
         {
-            bool processingStopped = toExecuteQueue.IsEmpty;
+            bool processingStopped = ToExecuteQueue.IsEmpty;
 
-            foreach (KeyValuePair<string, string> keyValuePair in pathsWatched)
+            foreach (KeyValuePair<string, string> keyValuePair in PathsWatched)
             {
                 if (!e.FullPath.StartsWith(keyValuePair.Key))
                     continue;
-                Console.WriteLine($"Detected {e.ChangeType} {e.FullPath}");
-                Console.WriteLine($"Placing {keyValuePair.Key} into queue to execute '{keyValuePair.Value}' ...");
-                toExecuteQueue.Enqueue(new KeyValuePair<string, string>(keyValuePair.Key, keyValuePair.Value));
+                ConsoleWriteLine($"Detected {e.ChangeType} {e.FullPath}");
+                ConsoleWriteLine($"Placing {keyValuePair.Key} into queue to execute '{keyValuePair.Value}' ...");
+                ToExecuteQueue.Enqueue(new KeyValuePair<string, string>(keyValuePair.Key, keyValuePair.Value));
             }
 
             if (processingStopped)
                 StartProcessQueue();
         }
 
-        static void StartProcessQueue()
+        private static void StartProcessQueue()
         {
             try
             {
                 bool result = Task.Run(
                     () =>
                     {
-                        while (!toExecuteQueue.IsEmpty)
-                            if (toExecuteQueue.TryDequeue(out KeyValuePair<string, string> code))
+                        while (!ToExecuteQueue.IsEmpty)
+                            if (ToExecuteQueue.TryDequeue(out KeyValuePair<string, string> code))
                             {
                                 Console.ForegroundColor = ConsoleColor.Cyan;
-                                Console.WriteLine($"Because of '{code.Key}'");
-                                Console.WriteLine($"Execution will begin for instruction '{code.Value}'");
+                                ConsoleWriteLine($"Because of '{code.Key}'");
+                                ConsoleWriteLine($"Execution will begin for instruction '{code.Value}'");
                                 RunInstruction(code.Value);
                             }
 
@@ -828,18 +781,18 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             }
         }
 
-        static void TrySaveResult(string saveLocation, string config)
+        private static void TrySaveResult(string saveLocation, string config)
         {
             if (string.IsNullOrEmpty(saveLocation))
                 return;
             if (string.IsNullOrEmpty(config))
                 return;
 
-            lock (padlock)
+            lock (Padlock)
             {
-                Console.WriteLine($"Saving to {saveLocation}...");
+                ConsoleWriteLine($"Saving to {saveLocation}...");
                 File.AppendAllText(saveLocation, config + Environment.NewLine);
-                Console.WriteLine("Saved!");
+                ConsoleWriteLine("Saved!");
             }
         }
 
@@ -895,7 +848,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 */
             string parameter = @"http add urlacl url=" + url + @" user=\" + everyone;
 
-            Console.WriteLine($"Running netsh with {parameter} ...");
+            ConsoleWriteLine($"Running netsh with {parameter} ...");
             var psi = new ProcessStartInfo("netsh", parameter);
 
             psi.Verb = "runas";
@@ -906,7 +859,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             Process.Start(psi);
         }
 
-        static Uri TryReformatUrl(string urlAddressString, List<string> urls)
+        private static Uri TryReformatUrl(string urlAddressString, List<string> urls)
         {
             Uri url;
             if (urlAddressString.StartsWith("www."))
@@ -937,7 +890,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             }
             catch
             {
-                Console.WriteLine("This application needs to run as admin");
+                ConsoleWriteLine("This application needs to run as admin");
             }
         }
     }
@@ -962,7 +915,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
 //OnlineProcess.ErrorDataReceived += (s, e) =>
 //{
-//    Console.WriteLine(e.Data);
+//    ConsoleWriteLine(e.Data);
 //};
 
 //OnlineProcess.OutputDataReceived += (s, e) =>
@@ -990,11 +943,11 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 //        {
 //            Process.Start(urlsOnline.First());
 //        }
-//        Console.WriteLine(e.Data);
+//        ConsoleWriteLine(e.Data);
 //    }
 //    catch (Exception exception)
 //    {
-//        Console.WriteLine(exception);
+//        ConsoleWriteLine(exception);
 //        //throw;
 //    }
 //};
@@ -1005,4 +958,4 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 //OnlineProcess.BeginErrorReadLine();
 
 ////string err = OnlineProcess.StandardOutput.ReadToEnd();
-////Console.WriteLine(err);
+////ConsoleWriteLine(err);

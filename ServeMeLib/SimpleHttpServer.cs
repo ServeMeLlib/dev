@@ -340,11 +340,45 @@
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
 
                             if (toParts.Length < 3)
-                                throw new Exception($"Incomplete assemply instruction from input {toPossiblePartsPart[1]} : I was expecting something like assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get");
+                                throw new Exception($"Incomplete assemply instruction from input {toPossiblePartsPart[1]} : I was expecting something like 'assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get'");
 
-                            object result = toParts.Length > 3 ? InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim(), toParts[3].Trim()) : InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim());
+                            object result = toParts.Length > 3 ? 
+                                InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim(), toParts[3].Trim()) : 
+                                InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim());
 
                             to = result.ToString();
+                            toParts[1] = to;
+                        }
+                        else if (toFirstPart == "sourcecode")
+                        {
+                            expectedJson = true;
+                            to = toPossiblePartsPart[1].Trim();
+                            toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
+
+                            if (toParts.Length < 2)
+                                throw new Exception($"Incomplete assemply instruction from input {toPossiblePartsPart[1]} : I was expecting something like 'sourcecode csharp xyz.txt w,get'");
+                            var lang = toParts[0].Trim();
+                            var filen = toParts[1].Trim();
+                            if (lang.ToLower() != "csharp")
+                            {
+                                throw new Exception("Only CSharp script is supported at this time");
+                            }
+
+                            object result=null;
+
+                            string source = File.ReadAllText(filen);
+                            if(!string.IsNullOrEmpty(source))
+                            {
+                                result = toParts.Length > 2 ? 
+                                    SimpleHttpServer.Execute(source, toParts[2].Trim()) : 
+                                    SimpleHttpServer.Execute(source);
+                                to = result.ToString();
+                            }
+                            else
+                            {
+                                throw  new Exception("Empty source code found");
+                            }
+                           
                             toParts[1] = to;
                         }
                         else if (toFirstPart == "atl" || toFirstPart == "appendtolink" || toFirstPart == "appendmatchedpathandquerytolink")
