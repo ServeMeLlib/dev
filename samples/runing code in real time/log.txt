@@ -1,0 +1,104 @@
+[2019-02-03 09:37:05.640] Request with GET http://localhost:44239/ for resource /
+[2019-02-03 09:37:05.649] Searching for matching setting ...
+[2019-02-03 09:37:05.665] Request settings has a descriptor
+[2019-02-03 09:37:05.693] Descriptor : app from log
+[2019-02-03 09:37:05.706] Matching descriptor  app with request path / ...
+[2019-02-03 09:37:05.719] Request settings has a descriptor
+[2019-02-03 09:37:05.730] Descriptor : equalto from /
+[2019-02-03 09:37:05.739] Matching descriptor  equalto with request path / ...
+[2019-02-03 09:37:05.748] Response is expected to be sourcecode
+[2019-02-03 09:37:05.971] Expected request method is GET
+[2019-02-03 09:37:05.981] Found matching setting : equalto / ,sourcecode csharp code1.cs,get
+[2019-02-03 09:37:05.992] Returning status code 200
+[2019-02-03 09:37:06.003] Returning json 2/3/2019 9:37:05 AM
+[2019-02-03 09:37:09.698] Request with GET http://localhost:44239/ for resource /
+[2019-02-03 09:37:09.707] Searching for matching setting ...
+[2019-02-03 09:37:09.719] Request settings has a descriptor
+[2019-02-03 09:37:09.732] Descriptor : app from log
+[2019-02-03 09:37:09.744] Matching descriptor  app with request path / ...
+[2019-02-03 09:37:09.756] Request settings has a descriptor
+[2019-02-03 09:37:09.771] Descriptor : equalto from /
+[2019-02-03 09:37:09.784] Matching descriptor  equalto with request path / ...
+[2019-02-03 09:37:09.798] Response is expected to be sourcecode
+[2019-02-03 09:37:10.035] Expected request method is GET
+[2019-02-03 09:37:10.047] Found matching setting : equalto / ,sourcecode csharp code1.cs,get
+[2019-02-03 09:37:10.057] Returning status code 200
+[2019-02-03 09:37:10.069] Returning json 2/3/2019 9:37:10 AM
+[2019-02-03 09:37:10.775] Request with GET http://localhost:44239/ for resource /
+[2019-02-03 09:37:10.791] Searching for matching setting ...
+[2019-02-03 09:37:10.803] Request settings has a descriptor
+[2019-02-03 09:37:10.813] Descriptor : app from log
+[2019-02-03 09:37:10.823] Matching descriptor  app with request path / ...
+[2019-02-03 09:37:10.837] Request settings has a descriptor
+[2019-02-03 09:37:10.849] Descriptor : equalto from /
+[2019-02-03 09:37:10.861] Matching descriptor  equalto with request path / ...
+[2019-02-03 09:37:10.874] Response is expected to be sourcecode
+[2019-02-03 09:37:11.100] Expected request method is GET
+[2019-02-03 09:37:11.110] Found matching setting : equalto / ,sourcecode csharp code1.cs,get
+[2019-02-03 09:37:11.123] Returning status code 200
+[2019-02-03 09:37:11.135] Returning json 2/3/2019 9:37:11 AM
+[2019-02-03 09:37:11.146] Request with GET http://localhost:44239/ for resource /
+[2019-02-03 09:37:11.156] Searching for matching setting ...
+[2019-02-03 09:37:11.170] Request settings has a descriptor
+[2019-02-03 09:37:11.180] Descriptor : app from log
+[2019-02-03 09:37:11.194] Matching descriptor  app with request path / ...
+[2019-02-03 09:37:11.204] Request settings has a descriptor
+[2019-02-03 09:37:11.218] Descriptor : equalto from /
+[2019-02-03 09:37:11.230] Matching descriptor  equalto with request path / ...
+[2019-02-03 09:37:11.240] Response is expected to be sourcecode
+[2019-02-03 09:37:11.477] Expected request method is GET
+[2019-02-03 09:37:11.487] Found matching setting : equalto / ,sourcecode csharp code1.cs,get
+[2019-02-03 09:37:11.499] Returning status code 200
+[2019-02-03 09:37:11.510] Returning json 2/3/2019 9:37:11 AM
+[2019-02-03 09:37:11.522] Request with GET http://localhost:44239/ for resource /
+[2019-02-03 09:37:11.533] Searching for matching setting ...
+[2019-02-03 09:37:11.545] Request settings has a descriptor
+[2019-02-03 09:37:11.555] Descriptor : app from log
+[2019-02-03 09:37:11.567] Matching descriptor  app with request path / ...
+[2019-02-03 09:37:11.578] Request settings has a descriptor
+[2019-02-03 09:37:11.589] Descriptor : equalto from /
+[2019-02-03 09:37:11.601] Matching descriptor  equalto with request path / ...
+[2019-02-03 09:37:11.615] Response is expected to be sourcecode
+[2019-02-03 09:37:11.858] Expected request method is GET
+[2019-02-03 09:37:11.870] Found matching setting : equalto / ,sourcecode csharp code1.cs,get
+[2019-02-03 09:37:11.883] Returning status code 200
+[2019-02-03 09:37:11.895] Returning json 2/3/2019 9:37:11 AM
+[2019-02-03 09:37:11.917] Request with GET http://localhost:44239/ for resource /
+[2019-02-03 09:37:11.928] Searching for matching setting ...
+[2019-02-03 09:37:11.940] Request settings has a descriptor
+[2019-02-03 09:37:11.952] Descriptor : app from log
+[2019-02-03 09:37:11.965] Matching descriptor  app with request path / ...
+[2019-02-03 09:37:11.989] Request settings has a descriptor
+[2019-02-03 09:37:12.004] Descriptor : equalto from /
+[2019-02-03 09:37:12.025] Matching descriptor  equalto with request path / ...
+[2019-02-03 09:37:12.038] Response is expected to be sourcecode
+[2019-02-03 09:37:12.348] Expected request method is GET
+[2019-02-03 09:37:12.360] Found matching setting : equalto / ,sourcecode csharp code1.cs,get
+[2019-02-03 09:37:12.370] Returning status code 200
+[2019-02-03 09:37:12.382] Returning json 2/3/2019 9:37:12 AM
+[2019-02-03 09:37:12.395] Request with GET http://localhost:44239/ for resource /
+[2019-02-03 09:37:12.407] Searching for matching setting ...
+[2019-02-03 09:37:12.417] Request settings has a descriptor
+[2019-02-03 09:37:12.428] Descriptor : app from log
+[2019-02-03 09:37:12.439] Matching descriptor  app with request path / ...
+[2019-02-03 09:37:12.450] Request settings has a descriptor
+[2019-02-03 09:37:12.463] Descriptor : equalto from /
+[2019-02-03 09:37:12.474] Matching descriptor  equalto with request path / ...
+[2019-02-03 09:37:12.486] Response is expected to be sourcecode
+[2019-02-03 09:37:12.719] Expected request method is GET
+[2019-02-03 09:37:12.733] Found matching setting : equalto / ,sourcecode csharp code1.cs,get
+[2019-02-03 09:37:12.744] Returning status code 200
+[2019-02-03 09:37:12.756] Returning json 2/3/2019 9:37:12 AM
+[2019-02-03 09:37:12.782] Request with GET http://localhost:44239/ for resource /
+[2019-02-03 09:37:12.807] Searching for matching setting ...
+[2019-02-03 09:37:12.849] Request settings has a descriptor
+[2019-02-03 09:37:12.870] Descriptor : app from log
+[2019-02-03 09:37:12.888] Matching descriptor  app with request path / ...
+[2019-02-03 09:37:12.908] Request settings has a descriptor
+[2019-02-03 09:37:12.926] Descriptor : equalto from /
+[2019-02-03 09:37:12.940] Matching descriptor  equalto with request path / ...
+[2019-02-03 09:37:12.952] Response is expected to be sourcecode
+[2019-02-03 09:37:13.198] Expected request method is GET
+[2019-02-03 09:37:13.210] Found matching setting : equalto / ,sourcecode csharp code1.cs,get
+[2019-02-03 09:37:13.224] Returning status code 200
+[2019-02-03 09:37:13.233] Returning json 2/3/2019 9:37:13 AM

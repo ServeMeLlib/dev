@@ -1,0 +1,19 @@
+*** This is a comment
+app openDefaultBrowserOnStartUp
+app log *** You can also log to file by doing 'app log , log.txt
+equalto / , sourcecode csharp code1.cs,get
+equalto /s1 , sourcecode csharp code1.cs,get
+equalto /s2 , sourcecode csharp code2.cs,get
+equalto /s3 , sourcecode csharp code3.cs,get
+s4 , wix.json *** It uses method GET by default, you can also use post
+s5 , wix.json , get
+s6 , json {'orderId':'1001'} , get
+s7 , json {} , GET , 404
+s8 , http://www.google.com 
+EndsWith /s9 , wix.json
+StartsWith /s10 , wix.json
+Regex /s11(.*) , wix.json
+s12,assembly ServeMe.exe ServeMeLib.ServeMe GetSeUpContent 
+search?q=god, AppendToLink https://www.google.com ***e.g http://localhost:431/search?q=god
+startsWith search, AppendMatchedPathToLink https://www.google.com ***e.g http://localhost:431/search
+startsWith /?q=, AppendMatchedQueryToLink https://www.google.com/search? ***e.g http://localhost:431?q=god

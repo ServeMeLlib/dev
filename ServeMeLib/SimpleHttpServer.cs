@@ -225,13 +225,12 @@
             if (!string.IsNullOrEmpty(content))
             {
                 this.ServeMe.Log("Searching for matching setting ...");
-                foreach (string s in content.Split('\n'))
+                foreach (string setupLine in content.Split('\n'))
                 {
-                    if (string.IsNullOrEmpty(s))
+                    if (string.IsNullOrEmpty(setupLine))
                         continue;
 
-                    if (s.StartsWith("//"))
-                        continue;
+                    string s = setupLine.Split(new[] { "***" }, StringSplitOptions.None)[0];
 
                     string[] parts = s.Split(',');
                     if (parts.Length < 2)
@@ -329,7 +328,7 @@
                     string toFirstPart = toPossiblePartsPart[0].Trim().ToLower();
                     if (toPossiblePartsPart.Length > 1)
                     {
-                        this.ServeMe.Log($"response is expected to be {toFirstPart}");
+                        this.ServeMe.Log($"Response is expected to be {toFirstPart}");
                         if (toFirstPart == "json")
                         {
                             expectedJson = true;
@@ -345,9 +344,7 @@
                             if (toParts.Length < 3)
                                 throw new Exception($"Incomplete assemply instruction from input {toPossiblePartsPart[1]} : I was expecting something like 'assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get'");
 
-                            object result = toParts.Length > 3 ? 
-                                InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim(), toParts[3].Trim()) : 
-                                InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim());
+                            object result = toParts.Length > 3 ? InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim(), toParts[3].Trim()) : InvokeMethod(toParts[0].Trim(), toParts[1].Trim(), toParts[2].Trim());
 
                             to = result.ToString();
                             toParts[1] = to;
@@ -360,28 +357,39 @@
 
                             if (toParts.Length < 2)
                                 throw new Exception($"Incomplete assemply instruction from input {toPossiblePartsPart[1]} : I was expecting something like 'sourcecode csharp xyz.txt w,get'");
-                            var lang = toParts[0].Trim();
-                            var filen = toParts[1].Trim();
+                            string lang = toParts[0].Trim();
+                            string filen = toParts[1].Trim();
                             if (lang.ToLower() != "csharp")
-                            {
                                 throw new Exception("Only CSharp script is supported at this time");
-                            }
 
-                            object result=null;
+                            object result = null;
 
                             string source = File.ReadAllText(filen);
-                            if(!string.IsNullOrEmpty(source))
+                            if (!string.IsNullOrEmpty(source))
                             {
-                                result = toParts.Length > 2 ? 
-                                    SimpleHttpServer.Execute(source, toParts[2].Trim()) : 
-                                    SimpleHttpServer.Execute(source);
-                                to = result.ToString();
+                                if (lang.ToLower() == "csharp")
+                                {
+                                    result = toParts.Length > 2 ? Execute(source, toParts[2].Trim()) : Execute(source);
+                                    to = result.ToString();
+                                }
+                                else if (lang.ToLower() == "javascript")
+                                {
+                                    //ProcessStartInfo psi = new ProcessStartInfo();
+                                    //psi.UseShellExecute = false;
+                                    //psi.CreateNoWindow = true;
+                                    //psi.FileName = @"node.exe";
+                                    //psi.Arguments = @"-any -arguments -go Here";
+                                    //using (var process =System.Diagnostics.Process.Start(psi))
+                                    //{
+                                    //    // Do something with process if you want.
+                                    //}
+                                }
                             }
                             else
                             {
-                                throw  new Exception("Empty source code found");
+                                throw new Exception("Empty source code found");
                             }
-                           
+
                             toParts[1] = to;
                         }
                         else if (toFirstPart == "atl" || toFirstPart == "appendtolink" || toFirstPart == "appendmatchedpathandquerytolink")

@@ -2,7 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.NetworkInformation;
     using System.Net.Sockets;
@@ -54,7 +56,7 @@
             this.InMemoryConfigurationPrepend = config + "\n" + this.InMemoryConfigurationPrepend;
         }
 
-        internal string GetSeUpContent()
+        public string GetSeUpContent()
         {
             this.InMemoryConfigurationPrepend = this.InMemoryConfigurationPrepend ?? "";
             this.InMemoryConfigurationAppend = this.InMemoryConfigurationAppend ?? "";
@@ -85,7 +87,7 @@
                 {
                     if (string.IsNullOrEmpty(s))
                         continue;
-                    string[] lines = s.Split(',');
+                    string[] lines = s.Split(new[] { "***" }, StringSplitOptions.None)[0].Split(',');
                     if (lines[0].ToLower().Trim() == match)
                     {
                         args = lines;
@@ -112,7 +114,7 @@
                 {
                     if (string.IsNullOrEmpty(s))
                         continue;
-                    string[] lines = s.Split(',');
+                    string[] lines = s.Split(new[] { "***" }, StringSplitOptions.None)[0].Split(',');
                     if (lines[0].Trim() == match.ToLower())
                     {
                         args = lines;
@@ -128,6 +130,20 @@
             return 0;
         }
 
+        public int GetPing(string ip, int timeout)
+        {
+            int p = -1;
+            using (var ping = new Ping())
+            {
+                PingReply reply = ping.Send(ip, timeout);
+                if (reply != null)
+                    if (reply.Status == IPStatus.Success)
+                        p = Convert.ToInt32(reply.RoundtripTime);
+            }
+
+            return p;
+        }
+
         internal bool Log(params string[] log)
         {
             string[] data;
@@ -139,7 +155,9 @@
                     {
                         try
                         {
-                            File.AppendAllLines(data[1], log);
+                            string fileName = data[1].Trim();
+
+                            File.AppendAllLines(fileName, log.Select(x => $"[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)}] {x}"));
                             return true;
                         }
                         catch (Exception e)

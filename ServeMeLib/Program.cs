@@ -14,199 +14,100 @@
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
 
-    internal class Program
+    class Program
     {
-        private static void Main(string[] args)
+        static readonly ConcurrentQueue<KeyValuePair<string, string>> ToExecuteQueue = new ConcurrentQueue<KeyValuePair<string, string>>();
+        static readonly ConcurrentDictionary<string, string> PathsWatched = new ConcurrentDictionary<string, string>();
+        static bool printResult = true;
+        static List<string> urls = new List<string>();
+        static ServeMe server;
+
+        static readonly object Padlock = new object();
+
+        static readonly Action helpAction = () =>
         {
-            StartProcessQueue();
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+            PrintDocTitle("=== ME : PORTS I'M USING ===");
+            PrintDoc("to open all the ports im using in default browsers do");
+            PrintCode("me");
 
-            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
-                TryRunAsAdmin(args);
-            else
-                using (server = new ServeMe())
-                {
-                    urls = server.Start();
-                    
-                    if (server.CanOpenDefaultBrowserOnStart())
-                        Process.Start(urls[0]);
+            PrintDocTitle("=== MAKING HTTP CALLS TO REMOTE SERVER ( WITH DATA ) ===");
+            PrintDoc("Enter a request into the system in the format [METHOD] [URI] [(optional)REQUEST_PARAM] [(optional)CONTENT_TYPE]. For example :");
+            PrintCode("post http://www.google.com {'name':'cow'} application/json");
+            PrintDoc("or simply");
+            PrintCode("post http://www.google.com {'name':'cow'}");
+            PrintDoc("or in the case og a get request, simply do");
+            ConsoleWriteLine("http://www.google.com");
+            PrintDoc("Enter 'e' or 'exit' window to exit");
+            ConsoleWriteLine("");
 
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    server.Log("ServeMe started successfully");
-                    ConsoleWriteLine("For help using this small shiny tool , enter 'help' or '?' and enter");
+            PrintDocTitle("=== EXECUTING CODE INLINE ===");
+            PrintDoc("You can also run code (C# Language) inline");
+            PrintDoc("For example you can do ");
+            PrintCode("code return DateTime.Now;");
+            PrintDoc("Or simply");
+            PrintCode("code DateTime.Now;");
+            ConsoleWriteLine("");
 
-                    do
-                    {
-                        Console.BackgroundColor = ConsoleColor.Black;
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        try
-                        {
-                            string entry = Console.ReadLine() ?? "";
+            PrintDocTitle("=== EXECUTING STUFF IN REPITITION ===");
+            PrintDoc("You can also run stuff repeatedly by prefixing with 'repeat' ");
+            PrintDoc("For example to execute code 10 times pausing for 1000 milliseconds inbetween , do");
+            PrintCode("repeat 10 1000 code return System.DateTime.Now;");
+            PrintDoc("For example to call get www.google.com 10 times pausing for 1000 milliseconds inbetween , do");
+            PrintCode("repeat 10 1000 get http://www.google.com");
+            PrintDoc("Or simply");
+            PrintCode("repeat 10 1000 http://www.google.com");
+            PrintDoc("To run 10 instances of code in parallel with 5 threads");
+            PrintCode("repeat 10 parallel 5 code return System.DateTime.Now;");
+            ConsoleWriteLine("");
 
-                            if (entry?.Trim()?.ToLower() == "e" || entry?.Trim().ToLower() == "exit")
-                                break;
+            ConsoleWriteLine("=== RUNNING STUFF IN PARALLEL WITH THREADS ===");
+            PrintDoc("To make 10 http get in parallel to google with 5 threads, do ");
+            PrintCode("repeat 10 parallel 5 http://www.google.com");
+            PrintDoc("That's kind of a load test use case, isn't it?");
+            ConsoleWriteLine("");
 
-                            RunInstruction(entry);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine(e.Message+" "+ e.InnerException?.Message);
-                        }
-                    }
-                    while (true);
-                }
-        }
+            PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL PLAIN TEXT FILE ===");
+            PrintDoc("You can even execute code that lives externally in a file in plain text");
+            PrintDoc("For example, to execute a C# code 50 times in parallel with 49 threads located in a plain text file cs.txt, do ");
+            PrintCode("repeat 50 parallel 49 sourcecode cs.txt");
+            PrintDoc("Simple but kinda cool eh :) Awesome!");
+            ConsoleWriteLine("");
 
-        private static readonly ConcurrentQueue<KeyValuePair<string, string>> ToExecuteQueue = new ConcurrentQueue<KeyValuePair<string, string>>();
-        private static readonly ConcurrentDictionary<string, string> PathsWatched = new ConcurrentDictionary<string, string>();
-        private static bool printResult = true;
-        private static List<string> urls = new List<string>();
-        private static ServeMe server;
+            PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL ASSEMBLY (DLL) FILE ===");
+            PrintDoc("You can even execute code that lives externally in an assembly");
+            PrintDoc("For example, to execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' 50 times in parallel with 49 threads located in an external assembly file  ServeMe.Tests.dll, do ");
+            PrintCode("repeat 50 parallel 49 libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+            PrintDoc("If you just want to simply execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' located in an external assembly file  ServeMe.Tests.dll, do ");
+            PrintCode("libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+            PrintDoc("Now that's dope!");
+            ConsoleWriteLine("");
 
-        private static readonly object Padlock = new object();
+            PrintDocTitle("=== DISABLING VERBOSE MODE ===");
+            PrintDoc("To disable inline code result do");
+            ConsoleWriteLine("verbose off");
+            PrintDoc("You can enable it back by doing");
+            ConsoleWriteLine("verbose on");
 
-        public static void PrintDocTitle(string title)
-        {
-            ConsoleWriteLine(title, () =>
-            {
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.Green;
-            });
-        }
+            PrintDocTitle("=== OPENING DEFAULT BROWSER ===");
+            PrintDoc("to open a link in browser do");
+            PrintCode("browser http://www.google.com");
 
-        public static void PrintDoc(string sample)
-        {
-            ConsoleWriteLine(sample, () =>
-            {
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-            });
-        }
+            PrintDocTitle("=== ROUTE TO LOCAL HOST ON CURRENT PORT ===");
+            PrintDoc("You don't have to enter the host while entering url. Local host will be asumed so if you do 'browser /meandyou' it will open");
+            PrintDoc("the default browser to location http://locahost:[PORT]/meandyou");
 
-        public static void PrintCode(string sample)
-        {
-            ConsoleWriteLine(sample, () =>
-            {
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.Green;
-            });
-        }
+            PrintDocTitle("=== CURRENT CONFIGURATION / SETUP ===");
+            PrintDoc("To see the current routing configuration in use (i.e both contents of server.csv file and those added into memory) do");
+            PrintCode("config");
+            ConsoleWriteLine("To add config (e.g contains google, http://www.google.com ) in memory , do ");
+            ConsoleWriteLine("config contains google, http://www.google.com");
 
-        public static void PrintCodeWithDoc(string sample, params string[] dec)
-        {
-            dec = dec ?? new string[] { };
-            foreach (string s in dec)
-            {
-                ConsoleWriteLine(s, () =>
-                {
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    Console.ForegroundColor = ConsoleColor.Green;
-                });
-            }
+            PrintDocTitle("=== SAVING RESULTS ===");
+            PrintDoc("If you want to save the result of a call to an api or of the execution of code , do");
+            PrintCode("save index.html http://www.google.com/");
+        };
 
-            ConsoleWriteLine(sample, () =>
-            {
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.Green;
-            });
-        }
-
-        public static void ConsoleWriteLine(string msg, Action setup = null)
-        {
-            var orF = Console.ForegroundColor;
-            var orB = Console.BackgroundColor;
-            setup?.Invoke();
-            Console.WriteLine(msg);
-            Console.ForegroundColor = orF;
-            Console.BackgroundColor = orB;
-        }
-
-        private static readonly Action helpAction = () =>
-           {
-               PrintDocTitle("=== ME : PORTS I'M USING ===");
-               PrintDoc("to open all the ports im using in default browsers do");
-               PrintCode("me");
-
-               PrintDocTitle("=== MAKING HTTP CALLS TO REMOTE SERVER ( WITH DATA ) ===");
-               PrintDoc("Enter a request into the system in the format [METHOD] [URI] [(optional)REQUEST_PARAM] [(optional)CONTENT_TYPE]. For example :");
-               PrintCode("post http://www.google.com {'name':'cow'} application/json");
-               PrintDoc("or simply");
-               PrintCode("post http://www.google.com {'name':'cow'}");
-               PrintDoc("or in the case og a get request, simply do");
-               ConsoleWriteLine("http://www.google.com");
-               PrintDoc("Enter 'e' or 'exit' window to exit");
-               ConsoleWriteLine("");
-
-               PrintDocTitle("=== EXECUTING CODE INLINE ===");
-               PrintDoc("You can also run code (C# Language) inline");
-               PrintDoc("For example you can do ");
-               PrintCode("code return DateTime.Now;");
-               PrintDoc("Or simply");
-               PrintCode("code DateTime.Now;");
-               ConsoleWriteLine("");
-
-               PrintDocTitle("=== EXECUTING STUFF IN REPITITION ===");
-               PrintDoc("You can also run stuff repeatedly by prefixing with 'repeat' ");
-               PrintDoc("For example to execute code 10 times pausing for 1000 milliseconds inbetween , do");
-               PrintCode("repeat 10 1000 code return System.DateTime.Now;");
-               PrintDoc("For example to call get www.google.com 10 times pausing for 1000 milliseconds inbetween , do");
-               PrintCode("repeat 10 1000 get http://www.google.com");
-               PrintDoc("Or simply");
-               PrintCode("repeat 10 1000 http://www.google.com");
-               PrintDoc("To run 10 instances of code in parallel with 5 threads");
-               PrintCode("repeat 10 parallel 5 code return System.DateTime.Now;");
-               ConsoleWriteLine("");
-
-               ConsoleWriteLine("=== RUNNING STUFF IN PARALLEL WITH THREADS ===");
-               PrintDoc("To make 10 http get in parallel to google with 5 threads, do ");
-               PrintCode("repeat 10 parallel 5 http://www.google.com");
-               PrintDoc("That's kind of a load test use case, isn't it?");
-               ConsoleWriteLine("");
-
-               PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL PLAIN TEXT FILE ===");
-               PrintDoc("You can even execute code that lives externally in a file in plain text");
-               PrintDoc("For example, to execute a C# code 50 times in parallel with 49 threads located in a plain text file cs.txt, do ");
-               PrintCode("repeat 50 parallel 49 sourcecode cs.txt");
-               PrintDoc("Simple but kinda cool eh :) Awesome!");
-               ConsoleWriteLine("");
-
-               PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL ASSEMBLY (DLL) FILE ===");
-               PrintDoc("You can even execute code that lives externally in an assembly");
-               PrintDoc("For example, to execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' 50 times in parallel with 49 threads located in an external assembly file  ServeMe.Tests.dll, do ");
-               PrintCode("repeat 50 parallel 49 libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
-               PrintDoc("If you just want to simply execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' located in an external assembly file  ServeMe.Tests.dll, do ");
-               PrintCode("libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
-               PrintDoc("Now that's dope!");
-               ConsoleWriteLine("");
-
-               PrintDocTitle("=== DISABLING VERBOSE MODE ===");
-               PrintDoc("To disable inline code result do");
-               ConsoleWriteLine("verbose off");
-               PrintDoc("You can enable it back by doing");
-               ConsoleWriteLine("verbose on");
-
-               PrintDocTitle("=== OPENING DEFAULT BROWSER ===");
-               PrintDoc("to open a link in browser do");
-               PrintCode("browser http://www.google.com");
-
-               PrintDocTitle("=== ROUTE TO LOCAL HOST ON CURRENT PORT ===");
-               PrintDoc("You don't have to enter the host while entering url. Local host will be asumed so if you do 'browser /meandyou' it will open");
-               PrintDoc("the default browser to location http://locahost:[PORT]/meandyou");
-
-               PrintDocTitle("=== CURRENT CONFIGURATION / SETUP ===");
-               PrintDoc("To see the current routing configuration in use (i.e both contents of server.csv file and those added into memory) do");
-               PrintCode("config");
-               ConsoleWriteLine("To add config (e.g contains google, http://www.google.com ) in memory , do ");
-               ConsoleWriteLine("config contains google, http://www.google.com");
-
-               PrintDocTitle("=== SAVING RESULTS ===");
-               PrintDoc("If you want to save the result of a call to an api or of the execution of code , do");
-               PrintCode("save index.html http://www.google.com/");
-           };
-
-        private static readonly string cheatSheet =
+        static readonly string cheatSheet =
             @"
 === setup commands ===
 cheat <--- display cheat sheet
@@ -244,12 +145,119 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
         public static Process OnlineProcess { get; set; }
 
-        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        static void Main(string[] args)
+        {
+            StartProcessQueue();
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+
+            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                TryRunAsAdmin(args);
+            else
+                using (server = new ServeMe())
+                {
+                    urls = server.Start();
+
+                    if (server.CanOpenDefaultBrowserOnStart())
+                        Process.Start(urls[0]);
+
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    server.Log("ServeMe started successfully");
+                    ConsoleWriteLine("For help using this small shiny tool , enter 'help' or '?' and enter");
+
+                    do
+                    {
+                        Console.BackgroundColor = ConsoleColor.Black;
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        try
+                        {
+                            string entry = Console.ReadLine() ?? "";
+
+                            if (entry?.Trim()?.ToLower() == "e" || entry?.Trim().ToLower() == "exit")
+                                break;
+
+                            RunInstruction(entry);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine(e.Message + " " + e.InnerException?.Message);
+                        }
+                    }
+                    while (true);
+                }
+        }
+
+        public static void PrintDocTitle(string title)
+        {
+            ConsoleWriteLine(
+                title,
+                () =>
+                {
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.ForegroundColor = ConsoleColor.Green;
+                });
+        }
+
+        public static void PrintDoc(string sample)
+        {
+            ConsoleWriteLine(
+                sample,
+                () =>
+                {
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                });
+        }
+
+        public static void PrintCode(string sample)
+        {
+            ConsoleWriteLine(
+                sample,
+                () =>
+                {
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.ForegroundColor = ConsoleColor.Green;
+                });
+        }
+
+        public static void PrintCodeWithDoc(string sample, params string[] dec)
+        {
+            dec = dec ?? new string[] { };
+            foreach (string s in dec)
+                ConsoleWriteLine(
+                    s,
+                    () =>
+                    {
+                        Console.BackgroundColor = ConsoleColor.Black;
+                        Console.ForegroundColor = ConsoleColor.Green;
+                    });
+
+            ConsoleWriteLine(
+                sample,
+                () =>
+                {
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.ForegroundColor = ConsoleColor.Green;
+                });
+        }
+
+        public static void ConsoleWriteLine(string msg, Action setup = null)
+        {
+            ConsoleColor orF = Console.ForegroundColor;
+            ConsoleColor orB = Console.BackgroundColor;
+            setup?.Invoke();
+            Console.WriteLine(msg);
+            Console.ForegroundColor = orF;
+            Console.BackgroundColor = orB;
+        }
+
+        static void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             Cleanup();
         }
 
-        private static bool RunInstruction(string entry)
+        static bool RunInstruction(string entry)
         {
             entry = entry.Trim();
             string saveLocation = null;
@@ -354,25 +362,76 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             {
                 Cleanup();
 
+                //try
+                //{
+                //    var exitCode =  StartProcess(
+                //        $@"cmd.exe",
+                //        $@"/K C:\Users\{Environment.UserName}\AppData\Roaming\npm\node_modules\ngrok\bin\ngrok.exe http {server.CurrentPortUsed}",
+                //        null,
+                //        10000,
+                //        Console.Out,
+                //        Console.Out).Result;
+                //    Console.WriteLine($"Process Exited with Exit Code {exitCode}!");
+                //}
+                //catch (TaskCanceledException)
+                //{
+                //    Console.WriteLine("Process Timed Out!");
+                //}
+                //========================================================================
+                //Process greeterProcess = new Process();
+                //greeterProcess.StartInfo.FileName = $@"C:\Users\{Environment.UserName}\AppData\Roaming\npm\node_modules\ngrok\bin\ngrok.exe";
+
+                //greeterProcess.StartInfo.RedirectStandardInput = true;
+
+                //greeterProcess.StartInfo.RedirectStandardOutput = true;
+                //greeterProcess.StartInfo.UseShellExecute = false;
+
+                //greeterProcess.StartInfo.Arguments = $@"http {server.CurrentPortUsed}";
+
+                //greeterProcess.Start();
+
+                //StreamWriter writer = greeterProcess.StandardInput;
+
+                //StreamReader reader = greeterProcess.StandardOutput;
+
+                //var data = "";
+                //do
+                //{
+                //    data = reader.ReadLine();
+                //    ConsoleWriteLine(data);
+                //    var goOn = string.IsNullOrWhiteSpace(data);
+                //    if (goOn)
+                //        break;
+                //}
+                //while (true);
+
+                //do
+                //{
+                //    data = reader.ReadLine();
+                //    ConsoleWriteLine(data);
+                //    var goOn = string.IsNullOrEmpty(data);
+                //    if (goOn)
+                //        break;
+                //}
+                //while (true);
+
                 var psiNpmRunDist = new ProcessStartInfo
                 {
                     FileName = "cmd",
-                    Arguments = "/c npm install ngrok -g"
+                    Arguments = "/c npm list ngrok -g || npm install ngrok -g"
                 };
                 Process pNpmRunDist = Process.Start(psiNpmRunDist);
                 pNpmRunDist.WaitForExit();
 
                 ConsoleWriteLine("Putting your server online now...");
-                Console.ForegroundColor = ConsoleColor.Green;
-                ConsoleWriteLine("In the window that will open, look for the url that looks like xxxx.ngrok.io, that will be your public url");
-                ConsoleWriteLine("Enter 'y' to confirm");
-                if (Console.ReadKey().KeyChar.ToString() != "y")
-                {
-                    ConsoleWriteLine("Going online aborted");
-                    return true;
-                }
-
-                //https://www.npmjs.com/package/ngrok
+                //Console.ForegroundColor = ConsoleColor.Green;
+                //ConsoleWriteLine("In the window that will open, look for the url that looks like xxxx.ngrok.io, that will be your public url");
+                //ConsoleWriteLine("Enter 'y' to confirm");
+                //if (Console.ReadKey().KeyChar.ToString() != "y")
+                //{
+                //    ConsoleWriteLine("Going online aborted");
+                //    return true;
+                //}
 
                 Task.Run(
                     () =>
@@ -664,7 +723,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                                         mediaType = entryParts[3];
                                     if (entryParts.Length > 2)
                                         request.Content = new StringContent(param, Encoding.UTF8, mediaType);
-                                 
+
                                     Console.BackgroundColor = ConsoleColor.Black;
                                     Console.ForegroundColor = ConsoleColor.Green;
                                     ConsoleWriteLine($"Sending request with '{method}' to '{url}' as '{mediaType}' with param '{param}' ....");
@@ -674,7 +733,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                                         e =>
                                         {
                                             Console.ForegroundColor = ConsoleColor.Red;
-                                            Console.WriteLine(e.Message+" "+ e.InnerException?.Message);
+                                            Console.WriteLine(e.Message + " " + e.InnerException?.Message);
                                         });
                                     Console.BackgroundColor = ConsoleColor.Black;
                                     Console.ForegroundColor = ConsoleColor.Gray;
@@ -682,7 +741,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                                     Console.BackgroundColor = ConsoleColor.White;
                                     Console.ForegroundColor = ConsoleColor.Black;
                                     TrySaveResult(saveLocation, result.Content.ReadAsStringAsync().Result);
-                                   
+
                                     if (printResult)
                                         ConsoleWriteLine(result.Content.ReadAsStringAsync().Result);
                                     else
@@ -719,7 +778,200 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             return false;
         }
 
-        private static void Cleanup()
+        public static async Task<int> StartProcess(
+            string filename,
+            string arguments,
+            string workingDirectory = null,
+            int? timeout = null,
+            TextWriter outputTextWriter = null,
+            TextWriter errorTextWriter = null)
+        {
+            using (var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    CreateNoWindow = true,
+                    Arguments = arguments,
+                    FileName = filename,
+                    RedirectStandardOutput = outputTextWriter != null,
+                    RedirectStandardError = errorTextWriter != null,
+                    UseShellExecute = false,
+                    WorkingDirectory = workingDirectory
+                }
+            })
+            {
+                process.Start();
+                CancellationTokenSource cancellationTokenSource = timeout.HasValue ? new CancellationTokenSource(timeout.Value) : new CancellationTokenSource();
+
+                var tasks = new List<Task>(3) { WaitForExitAsync(process, cancellationTokenSource.Token) };
+                if (outputTextWriter != null)
+                    tasks.Add(
+                        ReadAsync(
+                            x =>
+                            {
+                                process.OutputDataReceived += x;
+                                process.BeginOutputReadLine();
+                            },
+                            x => process.OutputDataReceived -= x,
+                            outputTextWriter,
+                            cancellationTokenSource.Token));
+
+                if (errorTextWriter != null)
+                    tasks.Add(
+                        ReadAsync(
+                            x =>
+                            {
+                                process.ErrorDataReceived += x;
+                                process.BeginErrorReadLine();
+                            },
+                            x => process.ErrorDataReceived -= x,
+                            errorTextWriter,
+                            cancellationTokenSource.Token));
+
+                await Task.WhenAll(tasks);
+                return process.ExitCode;
+            }
+        }
+
+        /// <summary>
+        ///     Waits asynchronously for the process to exit.
+        /// </summary>
+        /// <param name="process">The process to wait for cancellation.</param>
+        /// <param name="cancellationToken">
+        ///     A cancellation token. If invoked, the task will return
+        ///     immediately as cancelled.
+        /// </param>
+        /// <returns>A Task representing waiting for the process to end.</returns>
+        public static Task WaitForExitAsync(
+            Process process,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            process.EnableRaisingEvents = true;
+
+            var taskCompletionSource = new TaskCompletionSource<object>();
+
+            EventHandler handler = null;
+            handler = (sender, args) =>
+            {
+                process.Exited -= handler;
+                taskCompletionSource.TrySetResult(null);
+            };
+            process.Exited += handler;
+
+            if (cancellationToken != default(CancellationToken))
+                cancellationToken.Register(
+                    () =>
+                    {
+                        process.Exited -= handler;
+                        taskCompletionSource.TrySetCanceled();
+                    });
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        ///     Reads the data from the specified data recieved event and writes it to the
+        ///     <paramref name="textWriter" />.
+        /// </summary>
+        /// <param name="addHandler">Adds the event handler.</param>
+        /// <param name="removeHandler">Removes the event handler.</param>
+        /// <param name="textWriter">The text writer.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public static Task ReadAsync(
+            Action<DataReceivedEventHandler> addHandler,
+            Action<DataReceivedEventHandler> removeHandler,
+            TextWriter textWriter,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var taskCompletionSource = new TaskCompletionSource<object>();
+
+            DataReceivedEventHandler handler = null;
+            handler = new DataReceivedEventHandler(
+                (sender, e) =>
+                {
+                    if (e.Data == null)
+                    {
+                        removeHandler(handler);
+                        taskCompletionSource.TrySetResult(null);
+                    }
+                    else
+                    {
+                        textWriter.WriteLine(e.Data);
+                    }
+                });
+
+            addHandler(handler);
+
+            if (cancellationToken != default(CancellationToken))
+                cancellationToken.Register(
+                    () =>
+                    {
+                        removeHandler(handler);
+                        taskCompletionSource.TrySetCanceled();
+                    });
+
+            return taskCompletionSource.Task;
+        }
+
+        public static string RunCmd(params string[] commands)
+        {
+            string returnvalue = string.Empty;
+
+            var info = new ProcessStartInfo("cmd");
+            info.UseShellExecute = false;
+            info.RedirectStandardInput = true;
+            info.RedirectStandardOutput = true;
+            info.CreateNoWindow = true;
+
+            using (Process process = Process.Start(info))
+            {
+                StreamWriter sw = process.StandardInput;
+                StreamReader sr = process.StandardOutput;
+
+                foreach (string command in commands)
+                    sw.WriteLine(command);
+
+                sw.Close();
+                returnvalue = sr.ReadToEnd();
+            }
+
+            return returnvalue;
+        }
+
+        public static int ExecuteCommand(string Command, int Timeout)
+        {
+            int ExitCode = -1;
+            ProcessStartInfo ProcessInfo;
+            Process Process;
+            try
+            {
+                ProcessInfo = new ProcessStartInfo("cmd.exe", "/C " + Command);
+                ProcessInfo.UseShellExecute = false;
+                ProcessInfo.RedirectStandardOutput = true;
+                //ProcessInfo.CreateNoWindow = false;
+                //ProcessInfo.UseShellExecute = false;
+                Process = Process.Start(ProcessInfo);
+
+                Process.BeginOutputReadLine();
+                Process.ErrorDataReceived += (sender, eventArgs) => Console.WriteLine(eventArgs.Data);
+
+                Process.OutputDataReceived += new DataReceivedEventHandler(Process_OutputDataReceived);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error Processing ExecuteCommand : " + e.Message);
+            }
+
+            return ExitCode;
+        }
+
+        static void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            Console.WriteLine(e.Data);
+        }
+
+        static void Cleanup()
         {
             if (OnlineProcess != null && !OnlineProcess.HasExited)
             {
@@ -739,7 +991,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             }
         }
 
-        private static void file_created(object sender, FileSystemEventArgs e)
+        static void file_created(object sender, FileSystemEventArgs e)
         {
             bool processingStopped = ToExecuteQueue.IsEmpty;
 
@@ -756,7 +1008,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 StartProcessQueue();
         }
 
-        private static void StartProcessQueue()
+        static void StartProcessQueue()
         {
             try
             {
@@ -781,7 +1033,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             }
         }
 
-        private static void TrySaveResult(string saveLocation, string config)
+        static void TrySaveResult(string saveLocation, string config)
         {
             if (string.IsNullOrEmpty(saveLocation))
                 return;
@@ -859,7 +1111,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             Process.Start(psi);
         }
 
-        private static Uri TryReformatUrl(string urlAddressString, List<string> urls)
+        static Uri TryReformatUrl(string urlAddressString, List<string> urls)
         {
             Uri url;
             if (urlAddressString.StartsWith("www."))
