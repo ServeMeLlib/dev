@@ -43,15 +43,15 @@ Another example, to return content or orders.json when only GET /GetOrders , the
 
 Another example, to return {'orderId':'1001'}  when only POST /UpdateOrder , then server.csv will contain 
 
-`UpdateOrder ,  {'orderId':'1001'} , POST`
+`UpdateOrder , json {'orderId':'1001'} , POST`
 
 Another example, to return a 404  when only GET /AllData , then server.csv will contain 
 
-`AllData ,  {} , GET , 404`
+`AllData , json  {} , GET , 404`
 
 Another example, to return {'orderId':'1001'}  when only POST /UpdateOrder, matching the path and query exactly , then server.csv will contain 
 
-`equalto /UpdateOrder ,  {'orderId':'1001'} , POST`
+`equalto /UpdateOrder ,  json {'orderId':'1001'} , POST`
 
 Another example, to return http://www.google.com content  when only GET /google, matching the path and query exactly(not case sensitive) , then server.csv will contain
 
