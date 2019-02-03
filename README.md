@@ -109,4 +109,4 @@ You get the gist :)
 
 From the command line tool , you can enter 'help' or '?' for more information
 
-![image](https://user-images.githubusercontent.com/2102748/51878613-1be0f300-2325-11e9-9286-9b68a70d233a.png)
+![image](https://user-images.githubusercontent.com/2102748/52176540-fd398c80-2768-11e9-8dee-5283dea26614.png)
