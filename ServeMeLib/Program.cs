@@ -415,6 +415,32 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 //}
                 //while (true);
 
+                /*
+                    using localhost.run free http://localhost.run/
+
+                    ssh -R 80:localhost:31964 ssh.localhost.run
+                    The authenticity of host 'ssh.localhost.run (35.13.1.45)' can't be established.
+                    RSA key fingerprint is SHA256:FV8IMJ4IYjYUTnd6on7PqbRjaZf4c1EhhEBgeUdE94I.
+                    Are you sure you want to continue connecting (yes/no)? y
+                    Please type 'yes' or 'no': yes
+                    Warning: Permanently added 'ssh.localhost.run,35.13.1.45' (RSA) to the list of known hosts.
+                    Connect to http://sa.localhost.run or https://sa.localhost.run
+                    Connection to ssh.localhost.run closed.
+
+                    C:\Users\Sa>ssh-keygen -R ssh.localhost.run,35.193.161.204
+                    Updating known_hosts is not supported in Windows yet.
+
+                    cd /d "%USERPROFILE%\.ssh
+
+                    */
+
+                /*
+                  open status page in browser for ngrok
+                  http://localhost:4040/status
+
+                  others to try
+                  https://forwardhq.com/pricing
+                */
                 var psiNpmRunDist = new ProcessStartInfo
                 {
                     FileName = "cmd",
@@ -424,21 +450,15 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 pNpmRunDist.WaitForExit();
 
                 ConsoleWriteLine("Putting your server online now...");
-                //Console.ForegroundColor = ConsoleColor.Green;
-                //ConsoleWriteLine("In the window that will open, look for the url that looks like xxxx.ngrok.io, that will be your public url");
-                //ConsoleWriteLine("Enter 'y' to confirm");
-                //if (Console.ReadKey().KeyChar.ToString() != "y")
-                //{
-                //    ConsoleWriteLine("Going online aborted");
-                //    return true;
-                //}
-
+               
                 Task.Run(
                     () =>
                     {
                         OnlineProcess = new Process();
                         OnlineProcess.StartInfo.FileName = @"cmd.exe";
-                        OnlineProcess.StartInfo.Arguments = $@"/c C:\Users\{Environment.UserName}\AppData\Roaming\npm\node_modules\ngrok\bin\ngrok.exe http {server.CurrentPortUsed}";
+                        var ngrokPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\ngrok\bin\ngrok.exe");
+                        //var p = $@"{Path.GetPathRoot(Environment.SystemDirectory)}Users\{Environment.UserName}\AppData\Roaming\npm\node_modules\ngrok\bin\ngrok.exe";
+                        OnlineProcess.StartInfo.Arguments = $@"/c {ngrokPath}  http {server.CurrentPortUsed}";
                         OnlineProcess.Start();
                         ConsoleWriteLine("IMPORTANT: Remember to run 'go offline' to take your server offline!");
                         OnlineProcess.WaitForExit();

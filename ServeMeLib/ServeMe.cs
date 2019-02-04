@@ -15,7 +15,7 @@
         public static readonly string CurrentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
 
         readonly object padlock = new object();
-        readonly string ServerFileName = CurrentPath + "\\server.csv";
+        readonly string serverFileName = CurrentPath + "\\server.csv";
 
         internal Func<string, bool> FileExists = fn => File.Exists(fn);
         internal Func<string, string> ReadAllTextFromFile = fn => File.ReadAllText(fn);
@@ -60,9 +60,9 @@
         {
             this.InMemoryConfigurationPrepend = this.InMemoryConfigurationPrepend ?? "";
             this.InMemoryConfigurationAppend = this.InMemoryConfigurationAppend ?? "";
-            if (!string.IsNullOrEmpty(this.ServerCsv) || this.FileExists(this.ServerFileName))
+            if (!string.IsNullOrEmpty(this.ServerCsv) || this.FileExists(this.serverFileName))
             {
-                string content = this.ServerCsv ?? this.ReadAllTextFromFile(this.ServerFileName);
+                string content = this.ServerCsv ?? this.ReadAllTextFromFile(this.serverFileName);
                 string[] updateContent;
                 if (this.ExtractFromSettings("app LoadSettingsFromFile", content, out updateContent) == 2)
                 {
