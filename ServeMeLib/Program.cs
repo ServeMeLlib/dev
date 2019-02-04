@@ -461,6 +461,8 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                         OnlineProcess.StartInfo.Arguments = $@"/c {ngrokPath}  http {server.CurrentPortUsed}";
                         OnlineProcess.Start();
                         ConsoleWriteLine("IMPORTANT: Remember to run 'go offline' to take your server offline!");
+                        //todo in future , remove dependency on ngrok
+                        Process.Start("http://localhost:4040/status");
                         OnlineProcess.WaitForExit();
                     });
                 return true;
