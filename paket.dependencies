@@ -1,0 +1,6 @@
+source https://api.nuget.org/v3/index.json
+
+nuget MSTest.TestAdapter 1.3.2 prerelease restriction: >= net45
+nuget MSTest.TestFramework 1.3.2 prerelease restriction: >= net45
+nuget Fody
+nuget Costura.Fody
