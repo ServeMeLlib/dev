@@ -1,5 +1,6 @@
 ﻿namespace ServeMeLib
 {
+    using Microsoft.CSharp;
     using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
@@ -15,14 +16,13 @@
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.CSharp;
 
     // MIT License - Copyright (c) 2016 Can Güney Aksakalli
     // https://aksakalli.github.io/2014/02/24/simple-http-server-with-csparp.html
 
-    class SimpleHttpServer
+    internal class SimpleHttpServer
     {
-        static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+        private static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
             #region extension to MIME type list
 
@@ -94,7 +94,7 @@
             #endregion extension to MIME type list
         };
 
-        readonly string[] _indexFiles =
+        private readonly string[] _indexFiles =
         {
             "index.html",
             "index.htm",
@@ -102,11 +102,11 @@
             "default.htm"
         };
 
-        HttpListener _listener;
-        int _port;
-        string _rootDirectory;
+        private HttpListener _listener;
+        private int _port;
+        private string _rootDirectory;
 
-        Thread _serverThread;
+        private Thread _serverThread;
 
         public object PadLock = new object();
 
@@ -122,6 +122,12 @@
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 UseCookies = false
             };
+
+            ServicePointManager.Expect100Continue = true;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls
+                | SecurityProtocolType.Tls11
+                | SecurityProtocolType.Tls12
+                | SecurityProtocolType.Ssl3;
             client = new HttpClient(handler);
 
             this.ServeMe = serveMe;
@@ -138,7 +144,7 @@
             this.Initialize(path, port.Value);
         }
 
-        ServeMe ServeMe { get; }
+        private ServeMe ServeMe { get; }
 
         public int Port
         {
@@ -146,7 +152,7 @@
             private set { }
         }
 
-        static HttpClient client { set; get; }
+        private static HttpClient client { set; get; }
 
         /// <summary>
         ///     Stop server and dispose all functions.
@@ -160,7 +166,7 @@
             this._serverThread.Abort();
         }
 
-        void Listen()
+        private void Listen()
         {
             //https://github.com/arshad115/HttpListenerServer
             /*
@@ -211,7 +217,7 @@
             }
         }
 
-        void Process(HttpListenerContext context)
+        private void Process(HttpListenerContext context)
         {
             string filename = context.Request.Url.AbsolutePath;
 
@@ -258,65 +264,65 @@
                     switch (descriptor)
                     {
                         case "equalto":
-                        {
-                            if (from != pathAndQuery)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (from != pathAndQuery)
+                                    continue;
+                                break;
+                            }
                         case "!equalto":
-                        {
-                            if (from == pathAndQuery)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (from == pathAndQuery)
+                                    continue;
+                                break;
+                            }
                         case "contains":
-                        {
-                            if (!pathAndQuery.Contains(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!pathAndQuery.Contains(from))
+                                    continue;
+                                break;
+                            }
                         case "!contains":
-                        {
-                            if (pathAndQuery.Contains(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (pathAndQuery.Contains(from))
+                                    continue;
+                                break;
+                            }
                         case "startswith":
-                        {
-                            if (!pathAndQuery.StartsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!pathAndQuery.StartsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "!startswith":
-                        {
-                            if (pathAndQuery.StartsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (pathAndQuery.StartsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "endswith":
-                        {
-                            if (!pathAndQuery.EndsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!pathAndQuery.EndsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "!endswith":
-                        {
-                            if (pathAndQuery.EndsWith(from))
-                                continue;
-                            break;
-                        }
+                            {
+                                if (pathAndQuery.EndsWith(from))
+                                    continue;
+                                break;
+                            }
                         case "regex":
-                        {
-                            if (!new Regex(from).Match(pathAndQuery.Trim()).Success)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (!new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                    continue;
+                                break;
+                            }
                         case "!regex":
-                        {
-                            if (new Regex(from).Match(pathAndQuery.Trim()).Success)
-                                continue;
-                            break;
-                        }
+                            {
+                                if (new Regex(from).Match(pathAndQuery.Trim()).Success)
+                                    continue;
+                                break;
+                            }
                         default:
                             continue;
                     }
@@ -630,7 +636,7 @@
             context.Response.OutputStream.Close();
         }
 
-        void Initialize(string path, int port)
+        private void Initialize(string path, int port)
         {
             this._rootDirectory = path;
             this._port = port;
@@ -646,7 +652,10 @@
             try
             {
                 //todo using task run here now, but it needs to be refactored for performance
-                HttpResponseMessage response = Task.Run(() => client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Result;
+                HttpResponseMessage response = Task.Run(() =>
+                {
+                    return client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                }).Result;
 
                 response.Headers.Via.Add(new ViaHeaderValue("1.2", "ServeMeProxy", "http"));
                 //same again clear out due to protocol violation
@@ -708,7 +717,7 @@
             }
         }
 
-        static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
+        private static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
         {
             var method = new HttpMethod(requestInfo.HttpMethod);
 
@@ -775,7 +784,7 @@
             throw new Exception($"could not invoke method {methodName} in assembly {assemblyFileNameWithFullPath} in class {className}");
         }
 
-        static int NumberOfMatches(string orig, string find)
+        private static int NumberOfMatches(string orig, string find)
         {
             string s2 = orig.Replace(find, "");
             return (orig.Length - s2.Length) / find.Length;

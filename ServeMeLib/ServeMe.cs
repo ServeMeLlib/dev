@@ -12,6 +12,7 @@
 
     public class ServeMe : IDisposable
     {
+        public static string Version = "0.21.0";
         public static readonly string CurrentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
 
         readonly object padlock = new object();

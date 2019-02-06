@@ -6,10 +6,14 @@
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
+    using System.Net.Mime;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Security.Principal;
     using System.Text;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
@@ -147,6 +151,13 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
         static void Main(string[] args)
         {
+            if (File.Exists("ServeMe.update"))
+                File.Delete("ServeMe.update");
+            if (File.Exists("ServeMe.backup"))
+                File.Delete("ServeMe.backup");
+
+            Console.WriteLine($"ServeMe version {ServeMe.Version}");
+
             StartProcessQueue();
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
 
@@ -328,6 +339,84 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 helpAction();
                 return true;
             }
+            if (entry?.ToLower() == "update")
+            {
+                var updateLocation = "https://api.github.com/repos/ServeMeLlib/dev/releases";
+                ConsoleWriteLine("Are you sure you want to perform this update? (y/n)");
+                var response = Console.ReadLine().Trim().ToLower();
+                if (response == "y" || response == "yes")
+                {
+                    ConsoleWriteLine($"Updating from {updateLocation} ...");
+
+                    ServicePointManager.Expect100Continue = true;
+                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls
+                        | SecurityProtocolType.Tls11
+                        | SecurityProtocolType.Tls12
+                        | SecurityProtocolType.Ssl3;
+                    var client = new WebClient();
+                    client.Headers.Add("Accept: text/html, application/xhtml+xml, */*");
+                    client.Headers.Add("User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)");
+
+                    var data = client.DownloadString(updateLocation);
+                    string source = data;
+                    if (string.IsNullOrEmpty(source))
+                    {
+                        ConsoleWriteLine($"No update found at  {updateLocation} ");
+                    }
+                    else
+                    {
+                        Regex regexObj = new Regex(@"http((?!,).)*(ServeMe\.exe)");
+                        var matches = regexObj.Matches(source);
+                        if (matches.Count == 0)
+                        {
+                            ConsoleWriteLine($"No update found at  {updateLocation} ");
+                        }
+                        else
+                        {
+                            var updateUrl = matches[0];
+
+                            if (string.IsNullOrEmpty(updateUrl.Value))
+                            {
+                                ConsoleWriteLine($"No update found at  {updateLocation} ");
+                            }
+                            else
+                            {
+                                var downloadUrl = updateUrl.Value;
+                                var currentVersion = $"download/{ServeMe.Version}/ServeMe.exe";
+                                var downloadVersion = new Regex(@"download/((?!,).)*(/ServeMe\.exe)").Matches(downloadUrl)[0].Value;
+
+                                if (currentVersion == downloadVersion)
+                                {
+                                    Console.WriteLine("You already have the latest version. You are good to go!");
+                                }
+                                else
+                                {
+                                    ConsoleWriteLine($"Updating to {downloadVersion} ...");
+
+                                    File.Move("ServeMe.exe", "ServeMe.backup");
+                                    ConsoleWriteLine($"Downloading latest release from {updateUrl.Value} to ServeMe.update.exe ...");
+                                    client.DownloadFile(updateUrl.Value, "ServeMe.update");
+                                    File.Copy("ServeMe.update", "ServeMe.exe", true);
+
+                                    System.Diagnostics.Process.Start(
+                                        Environment.GetCommandLineArgs()[0],
+                                        Environment.GetCommandLineArgs().Length > 1 ?
+                                            string.Join(" ", Environment.GetCommandLineArgs().Skip(1)) :
+                                            null);
+                                    Environment.Exit(0);
+                                }
+
+                               
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    ConsoleWriteLine("Exiting update ...");
+                }
+                return true;
+            }
 
             if (entry.ToLower().StartsWith("watchpath "))
             {
@@ -450,7 +539,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 pNpmRunDist.WaitForExit();
 
                 ConsoleWriteLine("Putting your server online now...");
-               
+
                 Task.Run(
                     () =>
                     {
@@ -519,6 +608,34 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 {
                     server.AppendToInMemoryConfiguration(entry);
                     ConsoleWriteLine($"The entry '{entry}' has been appended to the configuration");
+                }
+                else
+                {
+                    ConsoleWriteLine($"Unknown config command '{entry}' ");
+                }
+
+                return true;
+            }
+
+            //download nuget
+            if (entry.ToLower().StartsWith("install nuget "))
+            {
+                entry = entry.Remove(0, "install nuget".Length).Trim();
+                if (!string.IsNullOrEmpty(entry))
+                {
+                    ConsoleWriteLine($"Installing nuget package '{entry}' ...");
+                    if (!Directory.Exists(".paket"))
+                    {
+                        Directory.CreateDirectory(".paket");
+                    }
+
+
+
+
+                }
+                else
+                {
+                    ConsoleWriteLine($"Unknown config command '{entry}' ");
                 }
 
                 return true;
