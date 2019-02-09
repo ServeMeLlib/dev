@@ -462,12 +462,21 @@
                         }
 
                     filename = to;
-                    string expectedMethod = "GET";
+                    string expectedMethodFrom = "GET";
+                    string methodTo = "GET";
                     if (parts.Length > 2)
                         if (!string.IsNullOrEmpty(parts[2].Trim()))
                         {
-                            expectedMethod = parts[2].Trim().ToUpper();
-                            if (context.Request.HttpMethod.ToLower() != expectedMethod.ToLower())
+                            expectedMethodFrom = parts[2].Trim().ToUpper();
+
+                            if (expectedMethodFrom.Contains("|"))
+                            {
+                                string[] methodParts = expectedMethodFrom.Split('|');
+                                expectedMethodFrom = string.IsNullOrEmpty(methodParts[0]) ? "GET" : methodParts[0];
+                                methodTo = methodParts[1];
+                            }
+
+                            if (context.Request.HttpMethod.ToLower() != expectedMethodFrom.ToLower())
                             {
                                 this.ServeMe.Log($"Found matching setting : {s}", "Returning \'NotFound\' status");
                                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
@@ -476,7 +485,8 @@
                             }
                         }
 
-                    this.ServeMe.Log($"Expected request method is {expectedMethod}");
+                    this.ServeMe.Log($"Expected request method is {expectedMethodFrom}");
+                    this.ServeMe.Log($"Expected send method is {methodTo}");
                     if (parts.Length > 3 ||
                         expectedJson /*to.StartsWith("{") || to.StartsWith("[")*/ ||
                         to.StartsWith("http://") || to.StartsWith("https://")
@@ -510,8 +520,9 @@
                             this.ServeMe.Log($"Get {response.StatusCode} response from call to {to} ");
 
                             context.Response.StatusCode = (int)response.StatusCode;
-                            context.Response.ContentType = response.Content.Headers.ContentType.MediaType;
-                            string mediaType = response.Content.Headers.ContentType.MediaType.ToLower();
+                            if (response.Content.Headers.ContentType != null)
+                                context.Response.ContentType = response.Content.Headers.ContentType.MediaType;
+                            string mediaType = response.Content.Headers.ContentType?.MediaType?.ToLower() ?? "";
                             if (mediaType.Contains("text") || mediaType.Contains("json"))
                             {
                                 string stringResponse = response.Content.ReadAsStringAsync().Result;
@@ -652,10 +663,7 @@
             try
             {
                 //todo using task run here now, but it needs to be refactored for performance
-                HttpResponseMessage response = Task.Run(() =>
-                {
-                    return client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-                }).Result;
+                HttpResponseMessage response = Task.Run(() => client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Result;
 
                 response.Headers.Via.Add(new ViaHeaderValue("1.2", "ServeMeProxy", "http"));
                 //same again clear out due to protocol violation
@@ -724,7 +732,22 @@
             var request = new HttpRequestMessage(method, RewriteToUrl);
 
             //have to explicitly null it to avoid protocol violation
-            if (request.Method == HttpMethod.Get || request.Method == HttpMethod.Trace) request.Content = null;
+            if (request.Method == HttpMethod.Get || request.Method == HttpMethod.Trace || request.Method == HttpMethod.Head || request.Method == HttpMethod.Delete)
+                request.Content = null;
+            else
+                using (Stream receiveStream = requestInfo.InputStream)
+                {
+                    using (var readStream = new StreamReader(receiveStream))
+                    {
+                        string documentContents = readStream.ReadToEnd();
+                        Console.WriteLine(documentContents);
+
+                        request.Content = new StringContent(
+                            documentContents,
+                            Encoding.UTF8,
+                            "application/json");
+                    }
+                }
 
             //now check if the request came from our secure listener then outgoing needs to be secure
             if (request.Headers.Contains("X-Forward-Secure"))
@@ -735,19 +758,18 @@
 
             string clientIp = "127.0.0.1";
             request.Headers.Add("X-Forwarded-For", clientIp);
-            if (requestInfo.UrlReferrer?.ToString() != null)
-                requestInfo.Headers.Add("Referer", requestInfo.UrlReferrer.ToString());
+            //if (requestInfo.UrlReferrer?.ToString() != null)
+            //    requestInfo.Headers.Add("Referer", requestInfo.UrlReferrer.ToString());
 
             foreach (string key in requestInfo.Headers)
                 if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(requestInfo.Headers[key]))
-                {
-                    if (request.Headers.Contains(key))
-                        request.Headers.Remove(key);
-                    request.Headers.Add(key, requestInfo.Headers[key]);
-                }
+                    if (request.Headers.TryAddWithoutValidation(key, requestInfo.Headers[key]))
+                    {
+                    }
 
             if (request.Headers.Contains("Host"))
                 request.Headers.Remove("Host");
+
             request.Headers.Add("Host", request.RequestUri.DnsSafeHost);
             if (!request.Headers.Contains("UserAgent"))
                 request.Headers.Add("UserAgent", "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.1) Gecko/2008070208 Firefox/3.0.1");

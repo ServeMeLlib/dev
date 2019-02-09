@@ -12,11 +12,11 @@
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.21.0";
+        public static string Version = "0.22.0";
         public static readonly string CurrentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
 
-        readonly object padlock = new object();
-        readonly string serverFileName = CurrentPath + "\\server.csv";
+        private readonly object padlock = new object();
+        private readonly string serverFileName = CurrentPath + "\\server.csv";
 
         internal Func<string, bool> FileExists = fn => File.Exists(fn);
         internal Func<string, string> ReadAllTextFromFile = fn => File.ReadAllText(fn);
@@ -77,7 +77,7 @@
             return this.InMemoryConfigurationPrepend + "\n" + this.InMemoryConfigurationAppend;
         }
 
-        int ExtractFromSettings(string match, string content, out string[] args)
+        private int ExtractFromSettings(string match, string content, out string[] args)
         {
             match = match.ToLower().Trim();
 
@@ -104,7 +104,7 @@
             return 0;
         }
 
-        int ExtractFromSettings(string match, out string[] args)
+        private int ExtractFromSettings(string match, out string[] args)
         {
             match = match.ToLower().Trim();
             string content = this.GetSeUpContent().ToLower().Trim();
@@ -185,7 +185,7 @@
         }
 
         //https://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
-        bool PortInUse(int port)
+        private bool PortInUse(int port)
         {
             bool isAvailable = true;
             IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();

@@ -8,9 +8,7 @@
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Mime;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
     using System.Security.Principal;
     using System.Text;
     using System.Text.RegularExpressions;
@@ -18,100 +16,100 @@
     using System.Threading.Tasks;
     using System.Web.Script.Serialization;
 
-    class Program
+    internal class Program
     {
-        static readonly ConcurrentQueue<KeyValuePair<string, string>> ToExecuteQueue = new ConcurrentQueue<KeyValuePair<string, string>>();
-        static readonly ConcurrentDictionary<string, string> PathsWatched = new ConcurrentDictionary<string, string>();
-        static bool printResult = true;
-        static List<string> urls = new List<string>();
-        static ServeMe server;
+        private static readonly ConcurrentQueue<KeyValuePair<string, string>> ToExecuteQueue = new ConcurrentQueue<KeyValuePair<string, string>>();
+        private static readonly ConcurrentDictionary<string, string> PathsWatched = new ConcurrentDictionary<string, string>();
+        private static bool printResult = true;
+        private static List<string> urls = new List<string>();
+        private static ServeMe server;
 
-        static readonly object Padlock = new object();
+        private static readonly object Padlock = new object();
 
-        static readonly Action helpAction = () =>
-        {
-            PrintDocTitle("=== ME : PORTS I'M USING ===");
-            PrintDoc("to open all the ports im using in default browsers do");
-            PrintCode("me");
+        private static readonly Action helpAction = () =>
+           {
+               PrintDocTitle("=== ME : PORTS I'M USING ===");
+               PrintDoc("to open all the ports im using in default browsers do");
+               PrintCode("me");
 
-            PrintDocTitle("=== MAKING HTTP CALLS TO REMOTE SERVER ( WITH DATA ) ===");
-            PrintDoc("Enter a request into the system in the format [METHOD] [URI] [(optional)REQUEST_PARAM] [(optional)CONTENT_TYPE]. For example :");
-            PrintCode("post http://www.google.com {'name':'cow'} application/json");
-            PrintDoc("or simply");
-            PrintCode("post http://www.google.com {'name':'cow'}");
-            PrintDoc("or in the case og a get request, simply do");
-            ConsoleWriteLine("http://www.google.com");
-            PrintDoc("Enter 'e' or 'exit' window to exit");
-            ConsoleWriteLine("");
+               PrintDocTitle("=== MAKING HTTP CALLS TO REMOTE SERVER ( WITH DATA ) ===");
+               PrintDoc("Enter a request into the system in the format [METHOD] [URI] [(optional)REQUEST_PARAM] [(optional)CONTENT_TYPE]. For example :");
+               PrintCode("post http://www.google.com {'name':'cow'} application/json");
+               PrintDoc("or simply");
+               PrintCode("post http://www.google.com {'name':'cow'}");
+               PrintDoc("or in the case og a get request, simply do");
+               ConsoleWriteLine("http://www.google.com");
+               PrintDoc("Enter 'e' or 'exit' window to exit");
+               ConsoleWriteLine("");
 
-            PrintDocTitle("=== EXECUTING CODE INLINE ===");
-            PrintDoc("You can also run code (C# Language) inline");
-            PrintDoc("For example you can do ");
-            PrintCode("code return DateTime.Now;");
-            PrintDoc("Or simply");
-            PrintCode("code DateTime.Now;");
-            ConsoleWriteLine("");
+               PrintDocTitle("=== EXECUTING CODE INLINE ===");
+               PrintDoc("You can also run code (C# Language) inline");
+               PrintDoc("For example you can do ");
+               PrintCode("code return DateTime.Now;");
+               PrintDoc("Or simply");
+               PrintCode("code DateTime.Now;");
+               ConsoleWriteLine("");
 
-            PrintDocTitle("=== EXECUTING STUFF IN REPITITION ===");
-            PrintDoc("You can also run stuff repeatedly by prefixing with 'repeat' ");
-            PrintDoc("For example to execute code 10 times pausing for 1000 milliseconds inbetween , do");
-            PrintCode("repeat 10 1000 code return System.DateTime.Now;");
-            PrintDoc("For example to call get www.google.com 10 times pausing for 1000 milliseconds inbetween , do");
-            PrintCode("repeat 10 1000 get http://www.google.com");
-            PrintDoc("Or simply");
-            PrintCode("repeat 10 1000 http://www.google.com");
-            PrintDoc("To run 10 instances of code in parallel with 5 threads");
-            PrintCode("repeat 10 parallel 5 code return System.DateTime.Now;");
-            ConsoleWriteLine("");
+               PrintDocTitle("=== EXECUTING STUFF IN REPITITION ===");
+               PrintDoc("You can also run stuff repeatedly by prefixing with 'repeat' ");
+               PrintDoc("For example to execute code 10 times pausing for 1000 milliseconds inbetween , do");
+               PrintCode("repeat 10 1000 code return System.DateTime.Now;");
+               PrintDoc("For example to call get www.google.com 10 times pausing for 1000 milliseconds inbetween , do");
+               PrintCode("repeat 10 1000 get http://www.google.com");
+               PrintDoc("Or simply");
+               PrintCode("repeat 10 1000 http://www.google.com");
+               PrintDoc("To run 10 instances of code in parallel with 5 threads");
+               PrintCode("repeat 10 parallel 5 code return System.DateTime.Now;");
+               ConsoleWriteLine("");
 
-            ConsoleWriteLine("=== RUNNING STUFF IN PARALLEL WITH THREADS ===");
-            PrintDoc("To make 10 http get in parallel to google with 5 threads, do ");
-            PrintCode("repeat 10 parallel 5 http://www.google.com");
-            PrintDoc("That's kind of a load test use case, isn't it?");
-            ConsoleWriteLine("");
+               ConsoleWriteLine("=== RUNNING STUFF IN PARALLEL WITH THREADS ===");
+               PrintDoc("To make 10 http get in parallel to google with 5 threads, do ");
+               PrintCode("repeat 10 parallel 5 http://www.google.com");
+               PrintDoc("That's kind of a load test use case, isn't it?");
+               ConsoleWriteLine("");
 
-            PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL PLAIN TEXT FILE ===");
-            PrintDoc("You can even execute code that lives externally in a file in plain text");
-            PrintDoc("For example, to execute a C# code 50 times in parallel with 49 threads located in a plain text file cs.txt, do ");
-            PrintCode("repeat 50 parallel 49 sourcecode cs.txt");
-            PrintDoc("Simple but kinda cool eh :) Awesome!");
-            ConsoleWriteLine("");
+               PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL PLAIN TEXT FILE ===");
+               PrintDoc("You can even execute code that lives externally in a file in plain text");
+               PrintDoc("For example, to execute a C# code 50 times in parallel with 49 threads located in a plain text file cs.txt, do ");
+               PrintCode("repeat 50 parallel 49 sourcecode cs.txt");
+               PrintDoc("Simple but kinda cool eh :) Awesome!");
+               ConsoleWriteLine("");
 
-            PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL ASSEMBLY (DLL) FILE ===");
-            PrintDoc("You can even execute code that lives externally in an assembly");
-            PrintDoc("For example, to execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' 50 times in parallel with 49 threads located in an external assembly file  ServeMe.Tests.dll, do ");
-            PrintCode("repeat 50 parallel 49 libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
-            PrintDoc("If you just want to simply execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' located in an external assembly file  ServeMe.Tests.dll, do ");
-            PrintCode("libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
-            PrintDoc("Now that's dope!");
-            ConsoleWriteLine("");
+               PrintDocTitle("=== EXECUTING CODE THAT LIVES IN EXTERNAL ASSEMBLY (DLL) FILE ===");
+               PrintDoc("You can even execute code that lives externally in an assembly");
+               PrintDoc("For example, to execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' 50 times in parallel with 49 threads located in an external assembly file  ServeMe.Tests.dll, do ");
+               PrintCode("repeat 50 parallel 49 libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+               PrintDoc("If you just want to simply execute a C# function called 'DoSomething' with argument 'w' in the class 'ServeMe.Tests.when_serve_me_runs' located in an external assembly file  ServeMe.Tests.dll, do ");
+               PrintCode("libcode ServeMe.Tests.dll ServeMe.Tests.when_serve_me_runs DoSomething w");
+               PrintDoc("Now that's dope!");
+               ConsoleWriteLine("");
 
-            PrintDocTitle("=== DISABLING VERBOSE MODE ===");
-            PrintDoc("To disable inline code result do");
-            ConsoleWriteLine("verbose off");
-            PrintDoc("You can enable it back by doing");
-            ConsoleWriteLine("verbose on");
+               PrintDocTitle("=== DISABLING VERBOSE MODE ===");
+               PrintDoc("To disable inline code result do");
+               ConsoleWriteLine("verbose off");
+               PrintDoc("You can enable it back by doing");
+               ConsoleWriteLine("verbose on");
 
-            PrintDocTitle("=== OPENING DEFAULT BROWSER ===");
-            PrintDoc("to open a link in browser do");
-            PrintCode("browser http://www.google.com");
+               PrintDocTitle("=== OPENING DEFAULT BROWSER ===");
+               PrintDoc("to open a link in browser do");
+               PrintCode("browser http://www.google.com");
 
-            PrintDocTitle("=== ROUTE TO LOCAL HOST ON CURRENT PORT ===");
-            PrintDoc("You don't have to enter the host while entering url. Local host will be asumed so if you do 'browser /meandyou' it will open");
-            PrintDoc("the default browser to location http://locahost:[PORT]/meandyou");
+               PrintDocTitle("=== ROUTE TO LOCAL HOST ON CURRENT PORT ===");
+               PrintDoc("You don't have to enter the host while entering url. Local host will be asumed so if you do 'browser /meandyou' it will open");
+               PrintDoc("the default browser to location http://locahost:[PORT]/meandyou");
 
-            PrintDocTitle("=== CURRENT CONFIGURATION / SETUP ===");
-            PrintDoc("To see the current routing configuration in use (i.e both contents of server.csv file and those added into memory) do");
-            PrintCode("config");
-            ConsoleWriteLine("To add config (e.g contains google, http://www.google.com ) in memory , do ");
-            ConsoleWriteLine("config contains google, http://www.google.com");
+               PrintDocTitle("=== CURRENT CONFIGURATION / SETUP ===");
+               PrintDoc("To see the current routing configuration in use (i.e both contents of server.csv file and those added into memory) do");
+               PrintCode("config");
+               ConsoleWriteLine("To add config (e.g contains google, http://www.google.com ) in memory , do ");
+               ConsoleWriteLine("config contains google, http://www.google.com");
 
-            PrintDocTitle("=== SAVING RESULTS ===");
-            PrintDoc("If you want to save the result of a call to an api or of the execution of code , do");
-            PrintCode("save index.html http://www.google.com/");
-        };
+               PrintDocTitle("=== SAVING RESULTS ===");
+               PrintDoc("If you want to save the result of a call to an api or of the execution of code , do");
+               PrintCode("save index.html http://www.google.com/");
+           };
 
-        static readonly string cheatSheet =
+        private static readonly string cheatSheet =
             @"
 === setup commands ===
 cheat <--- display cheat sheet
@@ -149,7 +147,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
         public static Process OnlineProcess { get; set; }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             if (File.Exists("ServeMe.update"))
                 File.Delete("ServeMe.update");
@@ -263,12 +261,12 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             Console.BackgroundColor = orB;
         }
 
-        static void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             Cleanup();
         }
 
-        static bool RunInstruction(string entry)
+        private static bool RunInstruction(string entry)
         {
             entry = entry.Trim();
             string saveLocation = null;
@@ -339,11 +337,12 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 helpAction();
                 return true;
             }
+
             if (entry?.ToLower() == "update")
             {
-                var updateLocation = "https://api.github.com/repos/ServeMeLlib/dev/releases";
+                string updateLocation = "https://api.github.com/repos/ServeMeLlib/dev/releases";
                 ConsoleWriteLine("Are you sure you want to perform this update? (y/n)");
-                var response = Console.ReadLine().Trim().ToLower();
+                string response = Console.ReadLine().Trim().ToLower();
                 if (response == "y" || response == "yes")
                 {
                     ConsoleWriteLine($"Updating from {updateLocation} ...");
@@ -357,7 +356,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                     client.Headers.Add("Accept: text/html, application/xhtml+xml, */*");
                     client.Headers.Add("User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)");
 
-                    var data = client.DownloadString(updateLocation);
+                    string data = client.DownloadString(updateLocation);
                     string source = data;
                     if (string.IsNullOrEmpty(source))
                     {
@@ -365,15 +364,15 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                     }
                     else
                     {
-                        Regex regexObj = new Regex(@"http((?!,).)*(ServeMe\.exe)");
-                        var matches = regexObj.Matches(source);
+                        var regexObj = new Regex(@"http((?!,).)*(ServeMe\.exe)");
+                        MatchCollection matches = regexObj.Matches(source);
                         if (matches.Count == 0)
                         {
                             ConsoleWriteLine($"No update found at  {updateLocation} ");
                         }
                         else
                         {
-                            var updateUrl = matches[0];
+                            Match updateUrl = matches[0];
 
                             if (string.IsNullOrEmpty(updateUrl.Value))
                             {
@@ -381,9 +380,9 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                             }
                             else
                             {
-                                var downloadUrl = updateUrl.Value;
-                                var currentVersion = $"download/{ServeMe.Version}/ServeMe.exe";
-                                var downloadVersion = new Regex(@"download/((?!,).)*(/ServeMe\.exe)").Matches(downloadUrl)[0].Value;
+                                string downloadUrl = updateUrl.Value;
+                                string currentVersion = $"download/{ServeMe.Version}/ServeMe.exe";
+                                string downloadVersion = new Regex(@"download/((?!,).)*(/ServeMe\.exe)").Matches(downloadUrl)[0].Value;
 
                                 if (currentVersion == downloadVersion)
                                 {
@@ -398,15 +397,11 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                                     client.DownloadFile(updateUrl.Value, "ServeMe.update");
                                     File.Copy("ServeMe.update", "ServeMe.exe", true);
 
-                                    System.Diagnostics.Process.Start(
+                                    Process.Start(
                                         Environment.GetCommandLineArgs()[0],
-                                        Environment.GetCommandLineArgs().Length > 1 ?
-                                            string.Join(" ", Environment.GetCommandLineArgs().Skip(1)) :
-                                            null);
+                                        Environment.GetCommandLineArgs().Length > 1 ? string.Join(" ", Environment.GetCommandLineArgs().Skip(1)) : null);
                                     Environment.Exit(0);
                                 }
-
-                               
                             }
                         }
                     }
@@ -415,6 +410,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 {
                     ConsoleWriteLine("Exiting update ...");
                 }
+
                 return true;
             }
 
@@ -545,7 +541,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                     {
                         OnlineProcess = new Process();
                         OnlineProcess.StartInfo.FileName = @"cmd.exe";
-                        var ngrokPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\ngrok\bin\ngrok.exe");
+                        string ngrokPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\ngrok\bin\ngrok.exe");
                         //var p = $@"{Path.GetPathRoot(Environment.SystemDirectory)}Users\{Environment.UserName}\AppData\Roaming\npm\node_modules\ngrok\bin\ngrok.exe";
                         OnlineProcess.StartInfo.Arguments = $@"/c {ngrokPath}  http {server.CurrentPortUsed}";
                         OnlineProcess.Start();
@@ -625,13 +621,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 {
                     ConsoleWriteLine($"Installing nuget package '{entry}' ...");
                     if (!Directory.Exists(".paket"))
-                    {
                         Directory.CreateDirectory(".paket");
-                    }
-
-
-
-
                 }
                 else
                 {
@@ -1105,12 +1095,12 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             return ExitCode;
         }
 
-        static void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        private static void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             Console.WriteLine(e.Data);
         }
 
-        static void Cleanup()
+        private static void Cleanup()
         {
             if (OnlineProcess != null && !OnlineProcess.HasExited)
             {
@@ -1130,7 +1120,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             }
         }
 
-        static void file_created(object sender, FileSystemEventArgs e)
+        private static void file_created(object sender, FileSystemEventArgs e)
         {
             bool processingStopped = ToExecuteQueue.IsEmpty;
 
@@ -1147,7 +1137,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 StartProcessQueue();
         }
 
-        static void StartProcessQueue()
+        private static void StartProcessQueue()
         {
             try
             {
@@ -1172,7 +1162,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             }
         }
 
-        static void TrySaveResult(string saveLocation, string config)
+        private static void TrySaveResult(string saveLocation, string config)
         {
             if (string.IsNullOrEmpty(saveLocation))
                 return;
@@ -1250,7 +1240,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             Process.Start(psi);
         }
 
-        static Uri TryReformatUrl(string urlAddressString, List<string> urls)
+        private static Uri TryReformatUrl(string urlAddressString, List<string> urls)
         {
             Uri url;
             if (urlAddressString.StartsWith("www."))
