@@ -1,5 +1,6 @@
 *** This is a comment
 app openDefaultBrowserOnStartUp
+app replacements , replacements.csv
 app log *** You can also log to file by doing 'app log , log.txt
 equalto / , sourcecode csharp code1.cs,get
 equalto /s1 , sourcecode csharp code1.cs,get
