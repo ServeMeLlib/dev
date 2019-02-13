@@ -523,9 +523,12 @@
                             if (response.Content.Headers.ContentType != null)
                                 context.Response.ContentType = response.Content.Headers.ContentType.MediaType;
                             string mediaType = response.Content.Headers.ContentType?.MediaType?.ToLower() ?? "";
-                            if (mediaType.Contains("text") || mediaType.Contains("json"))
+                            if (mediaType.Contains("text") || mediaType.Contains("json") || mediaType.Contains("javascript"))
                             {
                                 string stringResponse = response.Content.ReadAsStringAsync().Result;
+
+                                stringResponse = this.ServeMe.ExecuteTemplate(stringResponse);
+
                                 if (!string.IsNullOrEmpty(saveFile))
                                 {
                                     this.ServeMe.Log($"Saving to file {saveFile}...");
@@ -577,6 +580,7 @@
                             }
 
                             string responseData = to.Trim();
+                            responseData = this.ServeMe.ExecuteTemplate(responseData);
                             if (!string.IsNullOrEmpty(responseData))
                             {
                                 context.Response.ContentType = "application/json";
@@ -607,38 +611,61 @@
             this.ServeMe.Log($"Working on returning resource {filename}");
 
             if (this.ServeMe.FileExists(filename))
-                try
+            {
+                string mime;
+
+                if (filename.EndsWith(".json"))
+                    context.Response.ContentType = "application/json";
+                else if (_mimeTypeMappings.TryGetValue(Path.GetExtension(filename), out mime))
+                    context.Response.ContentType = mime;
+                else
+                    context.Response.ContentType = "application/octet-stream";
+
+                if (filename.EndsWith(".htm") ||
+                    filename.EndsWith(".html") ||
+                    filename.EndsWith(".js") ||
+                    filename.EndsWith(".css") ||
+                    filename.EndsWith(".txt") ||
+                    filename.EndsWith(".json"))
                 {
-                    Stream input = new FileStream(filename, FileMode.Open);
 
-                    //Adding permanent http response headers
-                    string mime;
-
-                    if (filename.EndsWith(".json"))
-                        context.Response.ContentType = "application/json";
-                    else if (_mimeTypeMappings.TryGetValue(Path.GetExtension(filename), out mime))
-                        context.Response.ContentType = mime;
-                    else
-                        context.Response.ContentType = "application/octet-stream";
-
-                    context.Response.ContentLength64 = input.Length;
-                    context.Response.AddHeader("Date", DateTime.Now.ToString("r"));
-                    context.Response.AddHeader("Last-Modified", File.GetLastWriteTime(filename).ToString("r"));
-
-                    var buffer = new byte[1024 * 16];
-                    int nbytes;
-                    while ((nbytes = input.Read(buffer, 0, buffer.Length)) > 0)
-                        context.Response.OutputStream.Write(buffer, 0, nbytes);
-                    input.Close();
-
-                    context.Response.StatusCode = !string.IsNullOrEmpty(responseCode) && int.TryParse(responseCode, out int code) ? code : (int)HttpStatusCode.OK;
-                    context.Response.OutputStream.Flush();
+                    var stringResponse = System.IO.File.ReadAllText(filename);
+                    stringResponse = this.ServeMe.ExecuteTemplate(stringResponse);
+                    new MemoryStream(Encoding.Default.GetBytes(stringResponse)).WriteTo(context.Response.OutputStream);
+                    context.Response.OutputStream.Close();
                 }
-                catch (Exception ex)
+                else
                 {
-                    this.ServeMe.Log($"Error occured while returning resource {filename} : {ex.Message} {ex.InnerException?.Message}");
-                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    try
+                    {
+
+                        //Adding permanent http response headers
+
+
+
+                        Stream input = new FileStream(filename, FileMode.Open);
+
+                        context.Response.ContentLength64 = input.Length;
+                        context.Response.AddHeader("Date", DateTime.Now.ToString("r"));
+                        context.Response.AddHeader("Last-Modified", File.GetLastWriteTime(filename).ToString("r"));
+
+                        var buffer = new byte[1024 * 16];
+                        int nbytes;
+                        while ((nbytes = input.Read(buffer, 0, buffer.Length)) > 0)
+                            context.Response.OutputStream.Write(buffer, 0, nbytes);
+                        input.Close();
+
+                        context.Response.StatusCode = !string.IsNullOrEmpty(responseCode) && int.TryParse(responseCode, out int code) ? code : (int)HttpStatusCode.OK;
+                        context.Response.OutputStream.Flush();
+                    }
+                    catch (Exception ex)
+                    {
+                        this.ServeMe.Log($"Error occured while returning resource {filename} : {ex.Message} {ex.InnerException?.Message}");
+                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    }
                 }
+
+            }
             else
                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
 

@@ -12,7 +12,7 @@
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.22.0";
+        public static string Version = "0.23.0";
         public static readonly string CurrentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
 
         private readonly object padlock = new object();
@@ -144,6 +144,60 @@
 
             return p;
         }
+
+        
+        internal string ExecuteTemplate(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+            string[] data;
+            int count = this.ExtractFromSettings("app replacements", out data);
+            if (count != 0)
+            {
+                if (count > 1)
+                   
+                        try
+                        {
+                            string fileName = data[1].Trim();
+
+                            if (string.IsNullOrEmpty(fileName))
+                            {
+                                return input;
+                            }
+
+                            string[] templateLines;
+                        lock (this.padlock)
+                            {
+                                templateLines =  System.IO.File.ReadAllLines(fileName);
+                            }
+
+                            foreach (string templateLine in templateLines)
+                            {
+                                var parts = templateLine.Split(',');
+                                var find = parts[0].Trim();
+
+                                if (parts.Length <= 1)
+                                    continue;
+
+                                var replace = parts[1].Trim();
+                                input = input.Replace(find, replace);
+                            }
+                            
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Error while trying to perform replacements using " + data[1]);
+                            Console.WriteLine(e);
+                        }
+                 
+            }
+
+            return input;
+        }
+
+
 
         internal bool Log(params string[] log)
         {
