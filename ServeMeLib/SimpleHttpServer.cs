@@ -244,6 +244,8 @@
 
                     string from = parts[0].ToLower().Trim();
 
+                    from = replaceTokensForTo(from, context);
+
                     string[] fromParts = from.Split(' ');
                     //todo remove duplicate codes all over here
 
@@ -400,12 +402,12 @@
                         }
                         else if (toFirstPart == "atl" || toFirstPart == "appendtolink" || toFirstPart == "appendmatchedpathandquerytolink")
                         {
-                            var tokensPasts = extractTokens(context);
+                           
 
                             
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + context.Request.Url.PathAndQuery;
 
-                            to = replaceTokensForTo(tokensPasts, to, context);
+                            to = replaceTokensForTo( to, context);
 
 
 
@@ -413,18 +415,18 @@
                         }
                         else if (toFirstPart == "appendmatchedpathtolink")
                         {
-                            var tokensPasts = extractTokens(context);
+                       
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + context.Request.Url.PathAndQuery.Split('#')[0].Split('?')[0];
-                            to = replaceTokensForTo(tokensPasts, to, context);
+                            to = replaceTokensForTo( to, context);
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
                         }
                         else if (toFirstPart == "appendmatchedquerytolink")
                         {
-                            var tokensPasts = extractTokens(context);
+                          
                             string[] pathAndQueryParts = context.Request.Url.PathAndQuery.Split('#')[0].Split('?');
                             string append = pathAndQueryParts.Length > 1 ? pathAndQueryParts[1] : "";
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + append;
-                            to = replaceTokensForTo(tokensPasts, to,context);
+                            to = replaceTokensForTo( to,context);
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
                         }
                         else
@@ -611,7 +613,7 @@
 
             if (filename.Contains("{{") && filename.Contains("}}"))
             {
-                filename = replaceTokensForTo(extractTokens(context), filename, context);
+                filename = replaceTokensForTo( filename, context);
             }
 
 
@@ -692,8 +694,9 @@
             context.Response.OutputStream.Close();
         }
 
-        private static string replaceTokensForTo(List<string> tokensPasts, string to, HttpListenerContext context)
+        private static string replaceTokensForTo( string to, HttpListenerContext context)
         {
+            List<string> tokensPasts = extractTokens(context);
             for (var i = 0; i < tokensPasts.Count; i++)
             {
                 to = replaceTokensForToInt(tokensPasts, to, i);
