@@ -21,6 +21,22 @@ Assuming you would like to serve a static site, single page application or just 
 It behaves exactly like static deployments on Now, so it's perfect for developing your static project. Then, when it's time to push it into production, you deploy it.
 `
 
+`
+
+Given a request http://www.google.com:456/let/us/go?w=tree
+http is {{0}} 
+www.google.com is {{1}} 
+456 is {{2}} 
+let is {{3}} 
+us is {{4}} 
+go is {{5}} or {{file}}
+w=tree is {{6}} or {{query}}
+http://www.google.com is {{root}}
+
+
+contains /{{3}}/js/, /{{3}}/js/{{file}}
+
+`
 
 ----
 Ok, so you want to do more, like serve json data like it's coming from a real REST api server ? No worries :) I've got you covered !
