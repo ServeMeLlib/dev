@@ -400,19 +400,31 @@
                         }
                         else if (toFirstPart == "atl" || toFirstPart == "appendtolink" || toFirstPart == "appendmatchedpathandquerytolink")
                         {
+                            var tokensPasts = extractTokens(context);
+
+                            
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + context.Request.Url.PathAndQuery;
+
+                            to = replaceTokensForTo(tokensPasts, to, context);
+
+
+
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
                         }
                         else if (toFirstPart == "appendmatchedpathtolink")
                         {
+                            var tokensPasts = extractTokens(context);
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + context.Request.Url.PathAndQuery.Split('#')[0].Split('?')[0];
+                            to = replaceTokensForTo(tokensPasts, to, context);
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
                         }
                         else if (toFirstPart == "appendmatchedquerytolink")
                         {
+                            var tokensPasts = extractTokens(context);
                             string[] pathAndQueryParts = context.Request.Url.PathAndQuery.Split('#')[0].Split('?');
                             string append = pathAndQueryParts.Length > 1 ? pathAndQueryParts[1] : "";
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + append;
+                            to = replaceTokensForTo(tokensPasts, to,context);
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
                         }
                         else
@@ -597,6 +609,12 @@
                 }
             }
 
+            if (filename.Contains("{{") && filename.Contains("}}"))
+            {
+                filename = replaceTokensForTo(extractTokens(context), filename, context);
+            }
+
+
             if (string.IsNullOrEmpty(filename))
                 foreach (string indexFile in this._indexFiles)
                     if (this.ServeMe.FileExists(Path.Combine(this._rootDirectory, indexFile)))
@@ -607,9 +625,9 @@
 
             filename = filename ?? "";
             if (!filename.Contains(":"))
-                filename = Path.Combine(this._rootDirectory, filename);
+                filename = Path.Combine(this._rootDirectory, filename.TrimStart('\\').TrimStart('/'));
             this.ServeMe.Log($"Working on returning resource {filename}");
-
+            
             if (this.ServeMe.FileExists(filename))
             {
                 string mime;
@@ -672,6 +690,49 @@
             this.ServeMe.Log("Request process completed");
 
             context.Response.OutputStream.Close();
+        }
+
+        private static string replaceTokensForTo(List<string> tokensPasts, string to, HttpListenerContext context)
+        {
+            for (var i = 0; i < tokensPasts.Count; i++)
+            {
+                to = replaceTokensForToInt(tokensPasts, to, i);
+            }
+
+            to=to.Replace("{{query}}", context.Request.Url.Query.Replace("?", ""));
+            to=to.Replace("{{file}}", context.Request.Url.Segments.Last().Replace("/","").Replace("?", ""));
+            to=to.Replace("{{root}}", context.Request.Url.Scheme+"://"+context.Request.Url.Authority);
+            to=to.Replace("{{port}}", context.Request.Url.Port.ToString());
+            to=to.Replace("{{scheme}}", context.Request.Url.Scheme.ToString());
+            to=to.Replace("{{authority}}", context.Request.Url.Authority.ToString());
+            to=to.Replace("{{host}}", context.Request.Url.Host.ToString());
+            to=to.Replace("{{pathandquery}}", context.Request.Url.PathAndQuery.ToString());
+            return to;
+        }
+        private static string replaceTokensForToInt(List<string> tokensPasts, string to, int i)
+        {
+            if (tokensPasts.Count > i)
+            {
+                to = to.Replace("{{"+i+"}}", tokensPasts[i]);
+            }
+
+            return to;
+        }
+
+        private static List<string> extractTokens(HttpListenerContext context)
+        {
+            var tokensPasts = new List<string>();
+            tokensPasts.Add(context.Request.Url.Scheme);
+            tokensPasts.Add(context.Request.Url.Host);
+            tokensPasts.Add(context.Request.Url.Port.ToString());
+            tokensPasts.AddRange(context.Request.Url.AbsolutePath.Split('/').Where(x=>!string.IsNullOrEmpty(x)).ToList());
+            tokensPasts.Add(context.Request.Url.Query.Split('#')[0].Replace("?", ""));
+            if (context.Request.Url.Query.Split('#').Length > 1)
+            {
+                tokensPasts.Add(context.Request.Url.Query.Split('#')[1].Replace("?", ""));
+            }
+
+            return tokensPasts;
         }
 
         private void Initialize(string path, int port)

@@ -36,7 +36,7 @@
         }
 
         [TestMethod]
-        public void return_maprequestpathandquerytolink()
+        public void return_maprequestpathandquerytolink2()
         {
             string serverCsv = "equalto /search?q=hello,appendtolink http://www.google.com,get\napp log";
             using (var serveMe = new ServeMe())
@@ -44,6 +44,34 @@
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
                 HttpWebResponse result = (url + "/search?q=hello").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+        [TestMethod]
+        public void return_maprequestpathandquerytolink3()
+        {
+            string serverCsv = "contains /sample.js, /sample/{{5}}";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+        [TestMethod]
+        public void return_maprequestpathandquerytolink()
+        {
+            string serverCsv = "contains /sample.js,appendtolink /sample/{{5}}";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").Get();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
