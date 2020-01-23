@@ -506,6 +506,8 @@
                         to.StartsWith("http://") || to.StartsWith("https://")
                     )
                     {
+                        to = replaceTokensForTo(to, context);
+
                         if (parts.Length > 3)
                             responseCode = parts[3].Trim();
                         else
