@@ -256,7 +256,7 @@
                     if (hasDescriptor)
                     {
                         this.ServeMe.Log("Request settings has a descriptor");
-                        from = fromParts[1].Trim();
+                        from = fromParts[1].Trim().ToLower();
                         descriptor = fromParts[0].Trim();
                         this.ServeMe.Log($"Descriptor : {descriptor} from {from}");
                     }
