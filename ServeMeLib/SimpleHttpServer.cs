@@ -237,14 +237,29 @@
                         continue;
 
                     string s = setupLine.Split(new[] { "***" }, StringSplitOptions.None)[0];
+var variables =  this.ServeMe.GetVariablesFromSettings();
 
+
+                  for (var i = 0; i < variables.Count; i++)
+                  {
+                      if (!s.StartsWith("app var"))
+                      {
+                          s = s.Replace("{{" + variables[i][0] + "}}", variables[i][1]);
+                      }
+                  }
                     string[] parts = s.Split(',');
                     if (parts.Length < 2)
                         continue;
 
                     string from = parts[0].ToLower().Trim();
 
-                    from = replaceTokensForTo(from, context);
+
+                  
+
+
+                      from = replaceTokensForTo(from, context);
+
+
 
                     string[] fromParts = from.Split(' ');
                     //todo remove duplicate codes all over here
@@ -529,7 +544,10 @@
                             }
 
                             ServicePointManager.Expect100Continue = false;
-                            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls
+                                                                   | SecurityProtocolType.Tls11
+                                                                   | SecurityProtocolType.Tls12
+                                                                   | SecurityProtocolType.Ssl3;
                             //expectedMethod
                             HttpResponseMessage response = this.Send(request, this.ServeMe.Log);
 
@@ -709,9 +727,16 @@
             to=to.Replace("{{root}}", context.Request.Url.Scheme+"://"+context.Request.Url.Authority);
             to=to.Replace("{{port}}", context.Request.Url.Port.ToString());
             to=to.Replace("{{scheme}}", context.Request.Url.Scheme.ToString());
-            to=to.Replace("{{authority}}", context.Request.Url.Authority.ToString());
+            to=to.Replace("{{domain}}", context.Request.Url.Authority.ToString());
             to=to.Replace("{{host}}", context.Request.Url.Host.ToString());
             to=to.Replace("{{pathandquery}}", context.Request.Url.PathAndQuery.ToString());
+            to=to.Replace("{{path}}", context.Request.Url.AbsolutePath.ToString());
+            to=to.Replace("{{extension}}", Path.GetExtension(context.Request.Url.ToString()));
+            to=to.Replace("{{noscheme}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://",""));
+            to=to.Replace("{{httpurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://","http://"));
+            to=to.Replace("{{httpsurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://","https://"));
+
+
             return to;
         }
         private static string replaceTokensForToInt(List<string> tokensPasts, string to, int i)

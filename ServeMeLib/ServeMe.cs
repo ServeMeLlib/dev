@@ -254,7 +254,22 @@
 
             return isAvailable;
         }
+        internal List<List<string>> GetVariablesFromSettings()
+        {
+            string[] data;
+            if (this.ExtractFromSettings("app var", out data) == 2)
+            {
+               var name= data[1].Split(';').Where(x=>!string.IsNullOrEmpty(x)).Select(x=>x.Trim().Split('=').Select(y=>y.Trim()).ToList()).Where(w => w.Count>0 && w.Count(string.IsNullOrEmpty)==0).ToList();
+              foreach (var list in name)
+              {
+                  if (list.Count != 2)
+                      throw new Exception($"Variable not well defined  in setting - '{list}' from '{name}'");
+                }
+                return name;
+            }
 
+            return null;
+        }
         internal int? GetPortNumberFromSettings()
         {
             string[] data;

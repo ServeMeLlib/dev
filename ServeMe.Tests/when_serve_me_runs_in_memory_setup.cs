@@ -50,6 +50,34 @@
             }
         }
         [TestMethod]
+        public void return_link_as_json_variables()
+        {
+            string serverCsv = "app var, x=www.google.com; \n getSome,json http://{{x}},get";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/getSome").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult == "http://www.google.com");
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+        [TestMethod]
+        public void variablesTest()
+        {
+            string serverCsv = "app var , x=sample.js; y=2; z=3; \n contains /{{x}}, /sample/{{5}}";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+        [TestMethod]
         public void return_maprequestpathandquerytolink3()
         {
             string serverCsv = "contains /sample.js, /sample/{{5}}";

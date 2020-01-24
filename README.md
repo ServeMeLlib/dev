@@ -23,16 +23,48 @@ It behaves exactly like static deployments on Now, so it's perfect for developin
 
 `
 
-Given a request http://www.google.com:456/let/us/go?w=tree
-http is {{0}} 
-www.google.com is {{1}} 
-456 is {{2}} 
-let is {{3}} 
-us is {{4}} 
-go is {{5}} or {{file}}
-w=tree is {{6}} or {{query}}
-http://www.google.com is {{root}}
+----
+Picking apart the request
+----
 
+Given a request http://www.google.com:456/let/us/go.php?w=tree
+
+/let/us/go.php?w=tree is {{pathandquery}}
+
+/let/us/go.php is {{path}}
+
+www.google.com:456/let/us/go.php?w=tree is {{noscheme}}
+
+https://www.google.com:456/let/us/go.php?w=tree is {{httpsurl}}
+
+http://www.google.com:456/let/us/go.php?w=tree is  {{httpurl}}
+
+http is {{0}} 
+
+www.google.com is {{1}} 
+
+456 is {{2}} 
+
+let is {{3}} 
+
+us is {{4}} 
+
+go.php is {{5}} or {{file}}
+
+w=tree is {{6}} or {{query}}
+
+php is {{extension}}
+
+456 is {{port}}
+
+http is {{scheme}}
+
+
+http://www.google.com:456 is {{root}}
+
+
+
+is {{domain}} www.google.com:456
 
 contains /{{3}}/js/, /{{3}}/js/{{file}}
 
