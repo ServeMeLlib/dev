@@ -237,29 +237,25 @@
                         continue;
 
                     string s = setupLine.Split(new[] { "***" }, StringSplitOptions.None)[0];
-var variables =  this.ServeMe.GetVariablesFromSettings();
+                    var variables = this.ServeMe.GetVariablesFromSettings();
 
-
-                  for (var i = 0; i < variables.Count; i++)
-                  {
-                      if (!s.StartsWith("app var"))
-                      {
-                          s = s.Replace("{{" + variables[i][0] + "}}", variables[i][1]);
-                      }
-                  }
+                    if (variables != null)
+                    {
+                        for (var i = 0; i < variables.Count; i++)
+                        {
+                            if (!s.StartsWith("app var"))
+                            {
+                                s = s.Replace("{{" + variables[i][0] + "}}", variables[i][1]);
+                            }
+                        }
+                    }
                     string[] parts = s.Split(',');
                     if (parts.Length < 2)
                         continue;
 
                     string from = parts[0].ToLower().Trim();
 
-
-                  
-
-
-                      from = replaceTokensForTo(from, context);
-
-
+                    from = replaceTokensForTo(from, context);
 
                     string[] fromParts = from.Split(' ');
                     //todo remove duplicate codes all over here
@@ -417,31 +413,24 @@ var variables =  this.ServeMe.GetVariablesFromSettings();
                         }
                         else if (toFirstPart == "atl" || toFirstPart == "appendtolink" || toFirstPart == "appendmatchedpathandquerytolink")
                         {
-                           
-
-                            
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + context.Request.Url.PathAndQuery;
 
-                            to = replaceTokensForTo( to, context);
-
-
+                            to = replaceTokensForTo(to, context);
 
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
                         }
                         else if (toFirstPart == "appendmatchedpathtolink")
                         {
-                       
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + context.Request.Url.PathAndQuery.Split('#')[0].Split('?')[0];
-                            to = replaceTokensForTo( to, context);
+                            to = replaceTokensForTo(to, context);
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
                         }
                         else if (toFirstPart == "appendmatchedquerytolink")
                         {
-                          
                             string[] pathAndQueryParts = context.Request.Url.PathAndQuery.Split('#')[0].Split('?');
                             string append = pathAndQueryParts.Length > 1 ? pathAndQueryParts[1] : "";
                             to = toPossiblePartsPart[1].Trim().TrimEnd('\\').TrimEnd('/') + append;
-                            to = replaceTokensForTo( to,context);
+                            to = replaceTokensForTo(to, context);
                             toParts = Regex.Split(toPossiblePartsPart[1].Trim(), @"\s{1,}");
                         }
                         else
@@ -633,9 +622,8 @@ var variables =  this.ServeMe.GetVariablesFromSettings();
 
             if (filename.Contains("{{") && filename.Contains("}}"))
             {
-                filename = replaceTokensForTo( filename, context);
+                filename = replaceTokensForTo(filename, context);
             }
-
 
             if (string.IsNullOrEmpty(filename))
                 foreach (string indexFile in this._indexFiles)
@@ -649,7 +637,7 @@ var variables =  this.ServeMe.GetVariablesFromSettings();
             if (!filename.Contains(":"))
                 filename = Path.Combine(this._rootDirectory, filename.TrimStart('\\').TrimStart('/'));
             this.ServeMe.Log($"Working on returning resource {filename}");
-            
+
             if (this.ServeMe.FileExists(filename))
             {
                 string mime;
@@ -668,7 +656,6 @@ var variables =  this.ServeMe.GetVariablesFromSettings();
                     filename.EndsWith(".txt") ||
                     filename.EndsWith(".json"))
                 {
-
                     var stringResponse = System.IO.File.ReadAllText(filename);
                     stringResponse = this.ServeMe.ExecuteTemplate(stringResponse);
                     new MemoryStream(Encoding.Default.GetBytes(stringResponse)).WriteTo(context.Response.OutputStream);
@@ -678,10 +665,7 @@ var variables =  this.ServeMe.GetVariablesFromSettings();
                 {
                     try
                     {
-
                         //Adding permanent http response headers
-
-
 
                         Stream input = new FileStream(filename, FileMode.Open);
 
@@ -704,7 +688,6 @@ var variables =  this.ServeMe.GetVariablesFromSettings();
                         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                     }
                 }
-
             }
             else
                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
@@ -714,7 +697,7 @@ var variables =  this.ServeMe.GetVariablesFromSettings();
             context.Response.OutputStream.Close();
         }
 
-        private static string replaceTokensForTo( string to, HttpListenerContext context)
+        private static string replaceTokensForTo(string to, HttpListenerContext context)
         {
             List<string> tokensPasts = extractTokens(context);
             for (var i = 0; i < tokensPasts.Count; i++)
@@ -722,28 +705,28 @@ var variables =  this.ServeMe.GetVariablesFromSettings();
                 to = replaceTokensForToInt(tokensPasts, to, i);
             }
 
-            to=to.Replace("{{query}}", context.Request.Url.Query.Replace("?", ""));
-            to=to.Replace("{{file}}", context.Request.Url.Segments.Last().Replace("/","").Replace("?", ""));
-            to=to.Replace("{{root}}", context.Request.Url.Scheme+"://"+context.Request.Url.Authority);
-            to=to.Replace("{{port}}", context.Request.Url.Port.ToString());
-            to=to.Replace("{{scheme}}", context.Request.Url.Scheme.ToString());
-            to=to.Replace("{{domain}}", context.Request.Url.Authority.ToString());
-            to=to.Replace("{{host}}", context.Request.Url.Host.ToString());
-            to=to.Replace("{{pathandquery}}", context.Request.Url.PathAndQuery.ToString());
-            to=to.Replace("{{path}}", context.Request.Url.AbsolutePath.ToString());
-            to=to.Replace("{{extension}}", Path.GetExtension(context.Request.Url.ToString()));
-            to=to.Replace("{{noscheme}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://",""));
-            to=to.Replace("{{httpurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://","http://"));
-            to=to.Replace("{{httpsurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://","https://"));
-
+            to = to.Replace("{{query}}", context.Request.Url.Query.Replace("?", ""));
+            to = to.Replace("{{file}}", context.Request.Url.Segments.Last().Replace("/", "").Replace("?", ""));
+            to = to.Replace("{{root}}", context.Request.Url.Scheme + "://" + context.Request.Url.Authority);
+            to = to.Replace("{{port}}", context.Request.Url.Port.ToString());
+            to = to.Replace("{{scheme}}", context.Request.Url.Scheme.ToString());
+            to = to.Replace("{{domain}}", context.Request.Url.Authority.ToString());
+            to = to.Replace("{{host}}", context.Request.Url.Host.ToString());
+            to = to.Replace("{{pathandquery}}", context.Request.Url.PathAndQuery.ToString());
+            to = to.Replace("{{path}}", context.Request.Url.AbsolutePath.ToString());
+            to = to.Replace("{{extension}}", Path.GetExtension(context.Request.Url.ToString()));
+            to = to.Replace("{{noscheme}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://", ""));
+            to = to.Replace("{{httpurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://", "http://"));
+            to = to.Replace("{{httpsurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://", "https://"));
 
             return to;
         }
+
         private static string replaceTokensForToInt(List<string> tokensPasts, string to, int i)
         {
             if (tokensPasts.Count > i)
             {
-                to = to.Replace("{{"+i+"}}", tokensPasts[i]);
+                to = to.Replace("{{" + i + "}}", tokensPasts[i]);
             }
 
             return to;
@@ -755,7 +738,7 @@ var variables =  this.ServeMe.GetVariablesFromSettings();
             tokensPasts.Add(context.Request.Url.Scheme);
             tokensPasts.Add(context.Request.Url.Host);
             tokensPasts.Add(context.Request.Url.Port.ToString());
-            tokensPasts.AddRange(context.Request.Url.AbsolutePath.Split('/').Where(x=>!string.IsNullOrEmpty(x)).ToList());
+            tokensPasts.AddRange(context.Request.Url.AbsolutePath.Split('/').Where(x => !string.IsNullOrEmpty(x)).ToList());
             tokensPasts.Add(context.Request.Url.Query.Split('#')[0].Replace("?", ""));
             if (context.Request.Url.Query.Split('#').Length > 1)
             {
