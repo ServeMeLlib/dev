@@ -12,7 +12,7 @@
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.23.0";
+        public static string Version = "0.31.0";
         public static readonly string CurrentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
 
         private readonly object padlock = new object();
@@ -145,7 +145,6 @@
             return p;
         }
 
-        
         internal string ExecuteTemplate(string input)
         {
             if (string.IsNullOrEmpty(input))
@@ -157,47 +156,43 @@
             if (count != 0)
             {
                 if (count > 1)
-                   
-                        try
+
+                    try
+                    {
+                        string fileName = data[1].Trim();
+
+                        if (string.IsNullOrEmpty(fileName))
                         {
-                            string fileName = data[1].Trim();
+                            return input;
+                        }
 
-                            if (string.IsNullOrEmpty(fileName))
-                            {
-                                return input;
-                            }
-
-                            string[] templateLines;
+                        string[] templateLines;
                         lock (this.padlock)
-                            {
-                                templateLines =  System.IO.File.ReadAllLines(fileName);
-                            }
-
-                            foreach (string templateLine in templateLines)
-                            {
-                                var parts = templateLine.Split(',');
-                                var find = parts[0].Trim();
-
-                                if (parts.Length <= 1)
-                                    continue;
-
-                                var replace = parts[1].Trim();
-                                input = input.Replace(find, replace);
-                            }
-                            
-                        }
-                        catch (Exception e)
                         {
-                            Console.WriteLine("Error while trying to perform replacements using " + data[1]);
-                            Console.WriteLine(e);
+                            templateLines = System.IO.File.ReadAllLines(fileName);
                         }
-                 
+
+                        foreach (string templateLine in templateLines)
+                        {
+                            var parts = templateLine.Split(',');
+                            var find = parts[0].Trim();
+
+                            if (parts.Length <= 1)
+                                continue;
+
+                            var replace = parts[1].Trim();
+                            input = input.Replace(find, replace);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Error while trying to perform replacements using " + data[1]);
+                        Console.WriteLine(e);
+                    }
             }
 
             return input;
         }
-
-
 
         internal bool Log(params string[] log)
         {
@@ -254,22 +249,24 @@
 
             return isAvailable;
         }
+
         internal List<List<string>> GetVariablesFromSettings()
         {
             string[] data;
             if (this.ExtractFromSettings("app var", out data) == 2)
             {
-               var name= data[1].Split(';').Where(x=>!string.IsNullOrEmpty(x)).Select(x=>x.Trim().Split('=').Select(y=>y.Trim()).ToList()).Where(w => w.Count>0 && w.Count(string.IsNullOrEmpty)==0).ToList();
-              foreach (var list in name)
-              {
-                  if (list.Count != 2)
-                      throw new Exception($"Variable not well defined  in setting - '{list}' from '{name}'");
+                var name = data[1].Split(';').Where(x => !string.IsNullOrEmpty(x)).Select(x => x.Trim().Split('=').Select(y => y.Trim()).ToList()).Where(w => w.Count > 0 && w.Count(string.IsNullOrEmpty) == 0).ToList();
+                foreach (var list in name)
+                {
+                    if (list.Count != 2)
+                        throw new Exception($"Variable not well defined  in setting - '{list}' from '{name}'");
                 }
                 return name;
             }
 
             return null;
         }
+
         internal int? GetPortNumberFromSettings()
         {
             string[] data;

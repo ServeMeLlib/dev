@@ -16,6 +16,7 @@
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
+
     internal class SimpleHttpServer
     {
         private static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
@@ -560,7 +561,6 @@
                             {
                                 string stringResponse = response.Content.ReadAsStringAsync().Result;
 
-
                                 if (!string.IsNullOrEmpty(filter))
                                 {
                                     filter = filter.ToLower().Trim();
@@ -869,9 +869,9 @@
             }
         }
 
-        private static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl, string HttpMethodStr=null)
+        private static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl, string HttpMethodStr = null)
         {
-            var method = new HttpMethod(HttpMethodStr??requestInfo.HttpMethod);
+            var method = new HttpMethod(HttpMethodStr ?? requestInfo.HttpMethod);
 
             var request = new HttpRequestMessage(method, RewriteToUrl);
 

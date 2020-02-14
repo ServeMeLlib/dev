@@ -5,7 +5,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Linq; 
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
@@ -149,6 +149,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
         private static void Main(string[] args)
         {
+            Console.Title = "ServeMe Lib v"+ ServeMe.Version;
             if (File.Exists("ServeMe.update"))
                 File.Delete("ServeMe.update");
             if (File.Exists("ServeMe.backup"))
