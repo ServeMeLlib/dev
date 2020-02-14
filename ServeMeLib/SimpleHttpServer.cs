@@ -16,10 +16,6 @@
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
-
-    // MIT License - Copyright (c) 2016 Can Güney Aksakalli
-    // https://aksakalli.github.io/2014/02/24/simple-http-server-with-csparp.html
-
     internal class SimpleHttpServer
     {
         private static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
@@ -342,6 +338,8 @@
 
                     string[] toParts = Regex.Split(parts[1].Trim(), @"\s{1,}");
                     string to = toParts[0].Trim();
+                    to = replaceTokensForTo(to, context);
+
                     string[] toPossiblePartsPart = parts[1].Trim().Split(new[] { ' ' }, 2);
                     bool expectedJson = false;
                     string toFirstPart = toPossiblePartsPart[0].Trim().ToLower();
@@ -482,18 +480,30 @@
                     filename = to;
                     string expectedMethodFrom = "GET";
                     string methodTo = "GET";
+                    string filter = null;
+                    bool isJsonP = false;
                     if (parts.Length > 2)
                         if (!string.IsNullOrEmpty(parts[2].Trim()))
                         {
                             expectedMethodFrom = parts[2].Trim().ToUpper();
-
+                            expectedMethodFrom = replaceTokensForTo(expectedMethodFrom, context);
                             if (expectedMethodFrom.Contains("|"))
                             {
                                 string[] methodParts = expectedMethodFrom.Split('|');
-                                expectedMethodFrom = string.IsNullOrEmpty(methodParts[0]) ? "GET" : methodParts[0];
-                                methodTo = methodParts[1];
+                                expectedMethodFrom = string.IsNullOrEmpty(methodParts[0]) ? "GET" : methodParts[0].Trim();
+                                filter = methodParts[1].Trim();
                             }
-
+                            if (expectedMethodFrom.Contains("-"))
+                            {
+                                string[] methodParts = expectedMethodFrom.Split('-');
+                                expectedMethodFrom = string.IsNullOrEmpty(methodParts[0]) ? "GET" : methodParts[0].Trim();
+                                methodTo = methodParts[1].Trim();
+                            }
+                            if (expectedMethodFrom.ToLower().Trim() == "getjsonp")
+                            {
+                                expectedMethodFrom = "GET";
+                                isJsonP = true;
+                            }
                             if (context.Request.HttpMethod.ToLower() != expectedMethodFrom.ToLower())
                             {
                                 this.ServeMe.Log($"Found matching setting : {s}", "Returning \'NotFound\' status");
@@ -521,7 +531,7 @@
                         {
                             this.ServeMe.Log($"Found matching setting : {s}", $"Making external call to {to}");
 
-                            HttpRequestMessage request = ToHttpRequestMessage(context.Request, to);
+                            HttpRequestMessage request = ToHttpRequestMessage(context.Request, to, methodTo);
 
                             if (authType != null)
                             {
@@ -549,6 +559,36 @@
                             if (mediaType.Contains("text") || mediaType.Contains("json") || mediaType.Contains("javascript"))
                             {
                                 string stringResponse = response.Content.ReadAsStringAsync().Result;
+
+
+                                if (!string.IsNullOrEmpty(filter))
+                                {
+                                    filter = filter.ToLower().Trim();
+                                    //power of filters
+                                    if (filter == "tolower")
+                                    {
+                                        stringResponse = stringResponse.ToLower();
+                                    }
+                                    if (filter == "jsonp")
+                                    {
+                                        isJsonP = true;
+                                    }
+                                }
+
+                                if (isJsonP)
+                                {
+                                    this.ServeMe.Log($"jsonp response requested");
+                                    var callback = context.Request.Url.ToString().Split(new char[] { '?', '&' }).Where(x => x.ToLower().StartsWith("callback=")).Select(x => x.Replace("callback=", "")).FirstOrDefault();
+                                    if (!string.IsNullOrEmpty(callback))
+                                    {
+                                        stringResponse = callback + "(" + stringResponse + ")";
+                                        this.ServeMe.Log($"jsonp formed!");
+                                    }
+                                    else
+                                    {
+                                        this.ServeMe.Log($"No jsonp callback could be inferred from the request");
+                                    }
+                                }
 
                                 stringResponse = this.ServeMe.ExecuteTemplate(stringResponse);
 
@@ -714,7 +754,7 @@
             to = to.Replace("{{host}}", context.Request.Url.Host.ToString());
             to = to.Replace("{{pathandquery}}", context.Request.Url.PathAndQuery.ToString());
             to = to.Replace("{{path}}", context.Request.Url.AbsolutePath.ToString());
-            to = to.Replace("{{extension}}", Path.GetExtension(context.Request.Url.ToString()));
+            to = to.Replace("{{extension}}", Path.GetExtension(context.Request.Url.ToString()).Split('?')[0]);
             to = to.Replace("{{noscheme}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://", ""));
             to = to.Replace("{{httpurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://", "http://"));
             to = to.Replace("{{httpsurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://", "https://"));
@@ -764,6 +804,9 @@
             try
             {
                 //todo using task run here now, but it needs to be refactored for performance
+                request.Headers.AcceptEncoding.Clear();
+                request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
+                request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
                 HttpResponseMessage response = Task.Run(() => client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Result;
 
                 response.Headers.Via.Add(new ViaHeaderValue("1.2", "ServeMeProxy", "http"));
@@ -826,9 +869,9 @@
             }
         }
 
-        private static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl)
+        private static HttpRequestMessage ToHttpRequestMessage(HttpListenerRequest requestInfo, string RewriteToUrl, string HttpMethodStr=null)
         {
-            var method = new HttpMethod(requestInfo.HttpMethod);
+            var method = new HttpMethod(HttpMethodStr??requestInfo.HttpMethod);
 
             var request = new HttpRequestMessage(method, RewriteToUrl);
 

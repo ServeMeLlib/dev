@@ -108,6 +108,18 @@ Another example, to return http://www.google.com content  when only GET /google,
 Another example, to return http://www.google.com content  when only GET and the path and query ends with /google (not case sensitive) , then server.csv will contain 
 
 `EndsWith /google ,  http://www.google.com , GET`     
+ 
+Another example, when a POST comes in , turn around and make a GET request to the server 
+
+`EndsWith /google ,  http://www.google.com , POST - GET` 
+ 
+Wrap the result in a jsonp, useful if client makes a jsonp call but server is not setup to return jsonp 
+
+`EndsWith /google ,  http://www.google.com , GETJSONP` 
+ 
+Using filters : when a POST comes in , turn around and make a GET request to the server. When the result comes back, wrap it in jsonp (same effect as above) 
+
+`EndsWith /google ,  http://www.google.com ,  POST - GET | jsonp` 
 
 Another example, to return http://www.google.com content  when only GET and the path and query starts with /google (not case sensitive) , then server.csv will contain 
 

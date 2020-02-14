@@ -1,4 +1,6 @@
-﻿namespace ServeMe.Tests
+﻿using System;
+
+namespace ServeMe.Tests
 {
     using System.IO;
     using System.Linq;
@@ -106,6 +108,113 @@
             }
         }
 
+
+        [TestMethod]
+        public void fails_on_a_post()
+        {
+            try
+            {
+                string serverCsv = @"getSome,http://www.google.com,post";
+                using (var serveMe = new ServeMe())
+                {
+                    string url = serveMe.Start().First();
+                    serveMe.AppendToInMemoryConfiguration(serverCsv);
+                    HttpWebResponse result = (url + "/getSome").Post();
+                    string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                    Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                    Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+                }
+                Assert.Fail();
+            }
+            catch (Exception e)
+            {
+              
+            }
+        }
+        [TestMethod]
+        public void turns_arround_and_get_when_it_would_have_failed_on_a_post()
+        {
+                string serverCsv = @"getSome,http://www.google.com,post - get";
+                using (var serveMe = new ServeMe())
+                {
+                    string url = serveMe.Start().First();
+                    serveMe.AppendToInMemoryConfiguration(serverCsv);
+                    HttpWebResponse result = (url + "/getSome").Post();
+                    string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                    Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                    Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+                }
+        }
+        [TestMethod]
+        public void return_jsonp()
+        {
+            string serverCsv = @"getSome,http://www.google.com,get | jsonp";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/getSome?callback=booo").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("booo(<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+        [TestMethod]
+        public void return_jsonp2()
+        {
+            string serverCsv = @"getSome,http://www.google.com,getjsonp";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/getSome?callback=booo").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("booo(<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+        [TestMethod]
+        public void understand_query_parts()
+        {
+            string serverCsv = @"startswith / ,json {{0}}/{{scheme}}/{{3}}/{{4}}/{{5}}/{{file}}/{{6}}/{{query}}/{{extension}}/{{pathandquery}}/{{path}},get ";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/let/us/go.php?w=tree").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult == "http/http/let/us/go.php/go.php/w=tree/w=tree/.php//let/us/go.php?w=tree//let/us/go.php");
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+        [TestMethod]
+        public void understand_query_parts2()
+        {
+            string serverCsv = @"startswith / ,{{scheme}}://{{3}}.{{4}}.{{5}},get ";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/www/google/com/us/go.php?w=tree").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+        [TestMethod]
+        public void understand_query_parts3_on_steriods()
+        {
+            string serverCsv = @"{{6}} / ,{{scheme}}://{{3}}.{{4}}.{{5}} , {{7}} ";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/www/google/com/startswith/get/us/go.php?w=tree").Get();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
         [TestMethod]
         public void return_link_as_json()
         {
@@ -230,6 +339,9 @@
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
+
+
+
 
         [TestMethod]
         public void it_can_return_json_string_provided_inline_with_get_and_accepted_status_code()
