@@ -27,7 +27,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult == "yo " + arg);
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -41,7 +41,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/search?q=hello").Get();
+                HttpWebResponse result = (url + "/search?q=hello").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -55,7 +55,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult == "http://www.google.com");
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -69,7 +69,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -83,7 +83,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -97,7 +97,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -116,7 +116,7 @@
                 Assert.IsFalse(File.Exists("data.json"));
 
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -135,7 +135,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv, fileExists: fn => true, readAllTextFromFile: fn => fn == "settings.txt" ? "getSome,{'ya':1},get,200" : "").First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -148,7 +148,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv, fileExists: fn => true, readAllTextFromFile: fn => fn == "settings.txt" ? "getSome,{'ya':1},get,200\napp log" : "").First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -161,7 +161,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -174,7 +174,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -187,7 +187,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -200,7 +200,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -213,7 +213,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -226,7 +226,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -239,7 +239,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -252,7 +252,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -265,7 +265,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -278,7 +278,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -291,7 +291,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -304,7 +304,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -317,7 +317,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -330,7 +330,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -343,7 +343,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -356,7 +356,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -369,7 +369,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -382,7 +382,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -395,7 +395,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -408,7 +408,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -421,7 +421,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -434,7 +434,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -447,7 +447,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -460,7 +460,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -473,7 +473,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -486,7 +486,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -499,7 +499,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -512,7 +512,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -525,7 +525,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -538,7 +538,7 @@
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv).First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }

@@ -1,15 +1,15 @@
-﻿namespace ServeMe.Tests
-{
-    using System.IO;
-    using System.Net;
-    using System.Text;
+﻿using System.IO;
+using System.Net;
+using System.Text;
 
+namespace ServeMeLib
+{
     public static class TestHelper
     {
-        public static HttpWebResponse Get(this string url)
+        public static HttpWebResponse HttpGet(this string url)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
-            request.AutomaticDecompression = DecompressionMethods.GZip;
+            request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             return (HttpWebResponse)request.GetResponse();
         }
@@ -23,7 +23,7 @@
             }
         }
 
-        public static HttpWebResponse Post(this string uri, string data = "", string method = "POST")
+        public static HttpWebResponse HttpPost(this string uri, string data = "", string method = "POST")
         {
             byte[] dataBytes = Encoding.UTF8.GetBytes(data);
             var request = (HttpWebRequest)WebRequest.Create(uri);

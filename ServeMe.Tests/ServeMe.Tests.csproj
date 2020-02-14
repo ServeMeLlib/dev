@@ -40,7 +40,6 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TestHelper.cs" />
     <Compile Include="when_serve_me_runs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="when_serve_me_runs_in_memory_setup.cs" />

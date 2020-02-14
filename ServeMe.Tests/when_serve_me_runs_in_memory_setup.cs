@@ -30,7 +30,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult == "yo " + arg);
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -45,7 +45,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/search?q=hello").Get();
+                HttpWebResponse result = (url + "/search?q=hello").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -59,7 +59,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult == "http://www.google.com");
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -73,7 +73,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").Get();
+                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -87,7 +87,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").Get();
+                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -101,7 +101,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").Get();
+                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -119,7 +119,7 @@ namespace ServeMe.Tests
                 {
                     string url = serveMe.Start().First();
                     serveMe.AppendToInMemoryConfiguration(serverCsv);
-                    HttpWebResponse result = (url + "/getSome").Post();
+                    HttpWebResponse result = (url + "/getSome").HttpPost();
                     string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                     Assert.IsTrue(finalResult.StartsWith("<!doc"));
                     Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -139,7 +139,7 @@ namespace ServeMe.Tests
                 {
                     string url = serveMe.Start().First();
                     serveMe.AppendToInMemoryConfiguration(serverCsv);
-                    HttpWebResponse result = (url + "/getSome").Post();
+                    HttpWebResponse result = (url + "/getSome").HttpPost();
                     string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                     Assert.IsTrue(finalResult.StartsWith("<!doc"));
                     Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -153,7 +153,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome?callback=booo").Get();
+                HttpWebResponse result = (url + "/getSome?callback=booo").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("booo(<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -167,7 +167,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome?callback=booo").Get();
+                HttpWebResponse result = (url + "/getSome?callback=booo").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("booo(<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -181,7 +181,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/let/us/go.php?w=tree").Get();
+                HttpWebResponse result = (url + "/let/us/go.php?w=tree").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult == "http/http/let/us/go.php/go.php/w=tree/w=tree/.php//let/us/go.php?w=tree//let/us/go.php");
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -195,7 +195,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/www/google/com/us/go.php?w=tree").Get();
+                HttpWebResponse result = (url + "/www/google/com/us/go.php?w=tree").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -209,7 +209,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/www/google/com/startswith/get/us/go.php?w=tree").Get();
+                HttpWebResponse result = (url + "/www/google/com/startswith/get/us/go.php?w=tree").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -223,7 +223,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult == "http://www.google.com");
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -238,7 +238,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -253,7 +253,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -268,7 +268,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -288,7 +288,7 @@ namespace ServeMe.Tests
 
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
                 Assert.IsTrue(finalResult.StartsWith("<!doc"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
@@ -307,7 +307,7 @@ namespace ServeMe.Tests
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv, fileExists: fn => true, readAllTextFromFile: fn => fn == "settings.txt" ? "getSome,{'ya':1},get,200" : "").First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -320,7 +320,7 @@ namespace ServeMe.Tests
             using (var serveMe = new ServeMe())
             {
                 string url = serveMe.Start(serverCsv, fileExists: fn => true, readAllTextFromFile: fn => fn == "settings.txt" ? "getSome,{'ya':1},get,200\napp log" : "").First();
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -334,7 +334,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -351,7 +351,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -365,7 +365,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':1}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
@@ -379,7 +379,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -393,7 +393,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -407,7 +407,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -421,7 +421,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -435,7 +435,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -449,7 +449,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -463,7 +463,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -477,7 +477,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -491,7 +491,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -505,7 +505,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -519,7 +519,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -533,7 +533,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -547,7 +547,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -561,7 +561,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Post();
+                HttpWebResponse result = (url + "/getSome").HttpPost();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -575,7 +575,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -589,7 +589,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -603,7 +603,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -617,7 +617,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -631,7 +631,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -645,7 +645,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -659,7 +659,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -673,7 +673,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -687,7 +687,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -701,7 +701,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -715,7 +715,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -729,7 +729,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
@@ -743,7 +743,7 @@ namespace ServeMe.Tests
             {
                 string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/getSome").Get();
+                HttpWebResponse result = (url + "/getSome").HttpGet();
                 Assert.AreEqual("{'ya':2}", result.ReadStringFromResponse());
                 Assert.AreEqual(HttpStatusCode.Accepted, result.StatusCode);
             }
