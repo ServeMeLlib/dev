@@ -101,7 +101,7 @@
 
         private HttpListener _listener;
         private int _port;
-        private string _rootDirectory;
+        //private string _rootDirectory;
 
         private Thread _serverThread;
 
@@ -111,7 +111,7 @@
         ///     Construct server with suitable port.
         /// </summary>
         /// <param name="path">Directory path to serve.</param>
-        public SimpleHttpServer(string path, ServeMe serveMe, int? port = null)
+        public SimpleHttpServer(ServeMe serveMe, int? port = null)
         {
             ServicePointManager.DefaultConnectionLimit = 100;
             var handler = new HttpClientHandler
@@ -138,7 +138,7 @@
             }
 
             this.ServeMe.Log($"Using port {port}");
-            this.Initialize(path, port.Value);
+            this.Initialize(port.Value);
         }
 
         private ServeMe ServeMe { get; }
@@ -667,7 +667,7 @@
 
             if (string.IsNullOrEmpty(filename))
                 foreach (string indexFile in this._indexFiles)
-                    if (this.ServeMe.FileExists(Path.Combine(this._rootDirectory, indexFile)))
+                    if (this.ServeMe.FileExists(Path.Combine(ServeMe.CurrentPath, indexFile)))
                     {
                         filename = indexFile;
                         break;
@@ -675,7 +675,7 @@
 
             filename = filename ?? "";
             if (!filename.Contains(":"))
-                filename = Path.Combine(this._rootDirectory, filename.TrimStart('\\').TrimStart('/'));
+                filename = Path.Combine(ServeMe.CurrentPath, filename.TrimStart('\\').TrimStart('/'));
             this.ServeMe.Log($"Working on returning resource {filename}");
 
             if (this.ServeMe.FileExists(filename))
@@ -788,9 +788,8 @@
             return tokensPasts;
         }
 
-        private void Initialize(string path, int port)
+        private void Initialize(int port)
         {
-            this._rootDirectory = path;
             this._port = port;
             this._serverThread = new Thread(this.Listen);
             this._serverThread.Start();

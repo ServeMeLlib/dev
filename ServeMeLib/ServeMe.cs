@@ -12,12 +12,26 @@
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.31.0";
-        public static readonly string CurrentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
+        public static string Version = "0.32.0";
+
+        public static string CurrentPath = null;
+        internal static string serverFileName = null;
+
+        internal static void SetWorkingDirectory(string dir = null)
+        {
+            if (dir != null)
+            {
+                CurrentPath = dir;
+            }
+            else
+            {
+                CurrentPath = CurrentPath ?? Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
+            }
+
+            serverFileName = CurrentPath + "\\server.csv";
+        }
 
         private readonly object padlock = new object();
-        private readonly string serverFileName = CurrentPath + "\\server.csv";
-
         internal Func<string, bool> FileExists = fn => File.Exists(fn);
         internal Func<string, string> ReadAllTextFromFile = fn => File.ReadAllText(fn);
 
@@ -61,9 +75,9 @@
         {
             this.InMemoryConfigurationPrepend = this.InMemoryConfigurationPrepend ?? "";
             this.InMemoryConfigurationAppend = this.InMemoryConfigurationAppend ?? "";
-            if (!string.IsNullOrEmpty(this.ServerCsv) || this.FileExists(this.serverFileName))
+            if (!string.IsNullOrEmpty(this.ServerCsv) || this.FileExists(ServeMe.serverFileName))
             {
-                string content = this.ServerCsv ?? this.ReadAllTextFromFile(this.serverFileName);
+                string content = this.ServerCsv ?? this.ReadAllTextFromFile(ServeMe.serverFileName);
                 string[] updateContent;
                 if (this.ExtractFromSettings("app LoadSettingsFromFile", content, out updateContent) == 2)
                 {
@@ -281,6 +295,20 @@
             return null;
         }
 
+        internal string GetWorkingPathFromSettings()
+        {
+            string[] data;
+            if (this.ExtractFromSettings("app dir", out data) == 2)
+            {
+                string dir = data[1];
+                if (!Directory.Exists(dir))
+                    throw new Exception($"The directory '{dir}' does not exist");
+                return dir;
+            }
+
+            return null;
+        }
+
         public List<string> Start(string serverCsv = null, int? port = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null, Action<string, string> writeAllTextToFile = null)
         {
             this.FileExists = fileExists ?? this.FileExists;
@@ -291,7 +319,8 @@
 
             try
             {
-                this.MyServer = new SimpleHttpServer(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory()), this, port ?? this.GetPortNumberFromSettings());
+                ServeMe.SetWorkingDirectory(this.GetWorkingPathFromSettings());
+                this.MyServer = new SimpleHttpServer(this, port ?? this.GetPortNumberFromSettings());
                 this.CurrentPortUsed = this.MyServer.Port;
                 Console.WriteLine("Serving!");
                 Console.WriteLine("");

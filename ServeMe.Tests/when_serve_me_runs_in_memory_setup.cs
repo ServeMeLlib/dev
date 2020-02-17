@@ -2,11 +2,11 @@
 
 namespace ServeMe.Tests
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using ServeMeLib;
     using System.IO;
     using System.Linq;
     using System.Net;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using ServeMeLib;
 
     [TestClass]
     public class when_serve_me_runs_in_memory_setup
@@ -38,6 +38,43 @@ namespace ServeMe.Tests
         }
 
         [TestMethod]
+        public void comment2()
+        {
+            try
+            {
+                string serverCsv = " wow cool \nequalto /search?q=hello,appendtolink http://www.google.com,get\napp log";
+                using (var serveMe = new ServeMe())
+                {
+                    string url = serveMe.Start().First();
+                    serveMe.AppendToInMemoryConfiguration(serverCsv);
+                    HttpWebResponse result = (url + "/search?q=hello").HttpGet();
+                    string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                    Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                    Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+                }
+                Assert.Fail();
+            }
+            catch (Exception e)
+            {
+            }
+        }
+
+        [TestMethod]
+        public void comment()
+        {
+            string serverCsv = "*** wow cool \nequalto /search?q=hello,appendtolink http://www.google.com,get\napp log";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/search?q=hello").HttpGet();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
         public void return_maprequestpathandquerytolink2()
         {
             string serverCsv = "equalto /search?q=hello,appendtolink http://www.google.com,get\napp log";
@@ -51,6 +88,7 @@ namespace ServeMe.Tests
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
+
         [TestMethod]
         public void return_link_as_json_variables()
         {
@@ -65,49 +103,51 @@ namespace ServeMe.Tests
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
+
         [TestMethod]
         public void variablesTest()
         {
-            string serverCsv = "app var , x=sample.js; y=2; z=3; \n contains /{{x}}, /sample/{{5}}";
+            string serverCsv = "app dir," + AppDomain.CurrentDomain.BaseDirectory + "\n" + "app var , x=sample.js; y=2; z=3; \n contains /{{x}}, /sample/{{5}}";
             using (var serveMe = new ServeMe())
             {
-                string url = serveMe.Start().First();
                 serveMe.AppendToInMemoryConfiguration(serverCsv);
+                string url = serveMe.Start().First();
                 HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").HttpGet();
                 string finalResult = result.ReadStringFromResponse().Trim().ToLower();
-                Assert.IsTrue(finalResult.StartsWith("<!doc"));
-                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            }
-        }
-        [TestMethod]
-        public void return_maprequestpathandquerytolink3()
-        {
-            string serverCsv = "contains /sample.js, /sample/{{5}}";
-            using (var serveMe = new ServeMe())
-            {
-                string url = serveMe.Start().First();
-                serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").HttpGet();
-                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
-                Assert.IsTrue(finalResult.StartsWith("<!doc"));
-                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            }
-        }
-        [TestMethod]
-        public void return_maprequestpathandquerytolink()
-        {
-            string serverCsv = "contains /sample.js,appendtolink /sample/{{5}}";
-            using (var serveMe = new ServeMe())
-            {
-                string url = serveMe.Start().First();
-                serveMe.AppendToInMemoryConfiguration(serverCsv);
-                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").HttpGet();
-                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
-                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.IsTrue(finalResult.StartsWith("123"));
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
 
+        [TestMethod]
+        public void return_maprequestpathandquerytolink3()
+        {
+            string serverCsv = "app dir," + AppDomain.CurrentDomain.BaseDirectory + "\n" + "contains /sample.js, /sample/{{5}}";
+            using (var serveMe = new ServeMe())
+            {
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                string url = serveMe.Start().First();
+                HttpWebResponse result = (url + "/boo/loud/sample.js?q=hello").HttpGet();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("123"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void return_maprequestpathandquerytolink()
+        {
+            string serverCsv = "app dir," + AppDomain.CurrentDomain.BaseDirectory + "\n" + "contains /sample.js, /sample/{{3}}";
+            using (var serveMe = new ServeMe())
+            {
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                string url = serveMe.Start().First();
+                HttpWebResponse result = (url + "/sample.js").HttpGet();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("123"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
 
         [TestMethod]
         public void fails_on_a_post()
@@ -128,23 +168,24 @@ namespace ServeMe.Tests
             }
             catch (Exception e)
             {
-              
             }
         }
+
         [TestMethod]
         public void turns_arround_and_get_when_it_would_have_failed_on_a_post()
         {
-                string serverCsv = @"getSome,http://www.google.com,post - get";
-                using (var serveMe = new ServeMe())
-                {
-                    string url = serveMe.Start().First();
-                    serveMe.AppendToInMemoryConfiguration(serverCsv);
-                    HttpWebResponse result = (url + "/getSome").HttpPost();
-                    string finalResult = result.ReadStringFromResponse().Trim().ToLower();
-                    Assert.IsTrue(finalResult.StartsWith("<!doc"));
-                    Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-                }
+            string serverCsv = @"getSome,http://www.google.com,post - get";
+            using (var serveMe = new ServeMe())
+            {
+                string url = serveMe.Start().First();
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                HttpWebResponse result = (url + "/getSome").HttpPost();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
         }
+
         [TestMethod]
         public void return_jsonp()
         {
@@ -159,6 +200,7 @@ namespace ServeMe.Tests
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
+
         [TestMethod]
         public void return_jsonp2()
         {
@@ -173,6 +215,7 @@ namespace ServeMe.Tests
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
+
         [TestMethod]
         public void understand_query_parts()
         {
@@ -187,6 +230,7 @@ namespace ServeMe.Tests
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
+
         [TestMethod]
         public void understand_query_parts2()
         {
@@ -201,6 +245,7 @@ namespace ServeMe.Tests
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
+
         [TestMethod]
         public void understand_query_parts3_on_steriods()
         {
@@ -215,6 +260,7 @@ namespace ServeMe.Tests
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
+
         [TestMethod]
         public void return_link_as_json()
         {
@@ -339,9 +385,6 @@ namespace ServeMe.Tests
                 Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             }
         }
-
-
-
 
         [TestMethod]
         public void it_can_return_json_string_provided_inline_with_get_and_accepted_status_code()

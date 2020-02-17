@@ -6,11 +6,11 @@ namespace ServeMeLib
 {
     public static class TestHelper
     {
-        public static HttpWebResponse HttpGet(this string url)
+        public static HttpWebResponse HttpGet(this string url, int timeoutMilliSeconds = 300000)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
             request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-
+            request.Timeout = timeoutMilliSeconds;
             return (HttpWebResponse)request.GetResponse();
         }
 

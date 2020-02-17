@@ -1,10 +1,10 @@
 ﻿namespace ServeMe.Tests
 {
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using ServeMeLib;
     using System.IO;
     using System.Linq;
     using System.Net;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using ServeMeLib;
 
     [TestClass]
     public class when_serve_me_runs

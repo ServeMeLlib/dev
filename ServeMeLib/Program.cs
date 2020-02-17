@@ -149,7 +149,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
 
         private static void Main(string[] args)
         {
-            Console.Title = "ServeMe Lib v"+ ServeMe.Version;
+            Console.Title = "ServeMe Lib v" + ServeMe.Version;
             if (File.Exists("ServeMe.update"))
                 File.Delete("ServeMe.update");
             if (File.Exists("ServeMe.backup"))
@@ -337,6 +337,66 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             {
                 helpAction();
                 return true;
+            }
+            if (entry?.ToLower() == "helponline")
+            {
+                Process.Start("https://github.com/ServeMeLlib/dev");
+                return true;
+            }
+
+            if (entry?.ToLower() == "init")
+            {
+                var file = "";
+                if (!File.Exists(ServeMe.serverFileName))
+                {
+                    file = ServeMe.serverFileName;
+                }
+                else
+                {
+                    file = ServeMe.serverFileName + ".example";
+                }
+
+                ConsoleWriteLine("Creating sample configuration ...");
+                File.WriteAllLines(file, new List<string>()
+                {
+                    "*** This tile was created by entering 'init' into the console",
+                    "",
+                    "",
+                    "*** Log everything that happens to console",
+                    "app log",
+                    "",
+                    "*** Open browser on start",
+                    "app openDefaultBrowserOnStartUp",
+                    "",
+                    "*** Reverse proxy example 1",
+                    "startswith / ,  https://www.google.com{{pathandquery}}",
+                    "",
+                    "*** Reverse proxy example 2",
+                    "/let/us/go.php?w=tree ,  {{0}}://www.google.com/{{3}}/{{4}}/{{5}}?{{6}}",
+                    "",
+                    "*** Reverse proxy example 3",
+                    "/let/us/go.php?w=tree , {{scheme}}://{{domain}}/{{3}}/{{4}}/{{file}}?{{query}}",
+                    "",
+                    "*** return {'orderId':'1001'} when only POST /UpdateOrder",
+                    "UpdateOrder , json {'orderId':'1001'} , POST",
+                    "",
+                    "*** Using regular expression to match, say GET /going request comes in",
+                    "Regex /go(.*) , http://www.google.com , GET",
+                    "",
+                    "*** Negation !, say when the request does not match",
+                    "!StartsWith /google , http://www.google.com , GET",
+                    "",
+                    "******************** OTHER HELPFUL HINTS ********",
+                    "***",
+                    "*** To relocate the config do [ app LoadSettingsFromFile,path/to/file/nameOfFile.cxv ]",
+                    "*** To set working directory do [ app dir, path/to/directory ]",
+                    "*** To set the port do [ app port,8080  ]",
+                    "*** To update the app enter 'update'",
+                    "***",
+                    "***************************************************",
+                    "*** To get more help enter 'help' or '?' or 'helponline'",
+                });
+                ConsoleWriteLine("Created configuration!");
             }
 
             if (entry?.ToLower() == "update")
