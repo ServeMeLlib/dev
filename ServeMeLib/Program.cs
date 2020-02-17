@@ -836,6 +836,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                         try
                         {
                             string specifiedMethod = "";
+                        
                             if (executionType == "code")
                             {
                                 object res = SimpleHttpServer.Execute(entry);
@@ -877,6 +878,9 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                                 TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
                                 // ConsoleWriteLine();
                                 Console.WriteLine(res);
+                            }else if (entry.Trim().ToLower() == "init")
+                            {
+
                             }
                             else
                             {
