@@ -394,6 +394,12 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                     "*** To update the app enter 'update'",
                     "***",
                     "***************************************************",
+                    "******************** RECIPE TO RUN A NON LOCAL FOLDER ********",
+                    "***",
+                    "*** app dir, path/to/directory",
+                    "*** app log",
+                    "***",
+                    "***************************************************",
                     "*** To get more help enter 'help' or '?' or 'helponline'",
                 });
                 ConsoleWriteLine("Created configuration!");

@@ -479,8 +479,8 @@
                         }
 
                     filename = to;
-                    string expectedMethodFrom = "GET";
-                    string methodTo = "GET";
+                    string expectedMethodFrom = context.Request.HttpMethod;
+                    string methodTo = context.Request.HttpMethod;
                     string filter = null;
                     bool isJsonP = false;
                     if (parts.Length > 2)
@@ -885,10 +885,8 @@
                         string documentContents = readStream.ReadToEnd();
                         Console.WriteLine(documentContents);
 
-                        request.Content = new StringContent(
-                            documentContents,
-                            Encoding.UTF8,
-                            "application/json");
+                        request.Content =
+                            new StringContent(documentContents,requestInfo.ContentEncoding,requestInfo.ContentType.Split(';')[0]);//"application/json" <-- could intercept here
                     }
                 }
 

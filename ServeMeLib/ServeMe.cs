@@ -12,23 +12,26 @@
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.32.0";
+        public static string Version = "0.33.0";
 
-        public static string CurrentPath = null;
-        internal static string serverFileName = null;
-
-        internal static void SetWorkingDirectory(string dir = null)
+        public  string CurrentPath = null;
+       
+        internal static string CurrentDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
+        internal static string serverFileName = ServeMe.CurrentDirectory + "\\server.csv";
+        internal  void SetWorkingDirectory(string dir = null)
         {
+    
+            
             if (dir != null)
             {
                 CurrentPath = dir;
             }
             else
             {
-                CurrentPath = CurrentPath ?? Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
+                CurrentPath = CurrentPath ?? ServeMe.CurrentDirectory;
             }
 
-            serverFileName = CurrentPath + "\\server.csv";
+            
         }
 
         private readonly object padlock = new object();
@@ -73,6 +76,7 @@
 
         public string GetSeUpContent()
         {
+            this.SetWorkingDirectory();
             this.InMemoryConfigurationPrepend = this.InMemoryConfigurationPrepend ?? "";
             this.InMemoryConfigurationAppend = this.InMemoryConfigurationAppend ?? "";
             if (!string.IsNullOrEmpty(this.ServerCsv) || this.FileExists(ServeMe.serverFileName))
@@ -300,7 +304,7 @@
             string[] data;
             if (this.ExtractFromSettings("app dir", out data) == 2)
             {
-                string dir = data[1];
+                string dir = data[1].Trim();
                 if (!Directory.Exists(dir))
                     throw new Exception($"The directory '{dir}' does not exist");
                 return dir;
@@ -319,7 +323,7 @@
 
             try
             {
-                ServeMe.SetWorkingDirectory(this.GetWorkingPathFromSettings());
+                this.SetWorkingDirectory(this.GetWorkingPathFromSettings());
                 this.MyServer = new SimpleHttpServer(this, port ?? this.GetPortNumberFromSettings());
                 this.CurrentPortUsed = this.MyServer.Port;
                 Console.WriteLine("Serving!");
