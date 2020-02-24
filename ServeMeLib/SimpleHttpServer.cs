@@ -225,7 +225,7 @@
 
             string responseCode = "";
             string content = this.ServeMe.GetSeUpContent();
-           // bool enableMemoization = false;
+            // bool enableMemoization = false;
             if (!string.IsNullOrEmpty(content))
             {
                 this.ServeMe.Log("Searching for matching setting ...");
@@ -358,10 +358,45 @@
                     string saveFile = null;
                     string find = null;
                     string replace = null;
-                    if (parts.Length > 4)
+                    if (parts.Length > 4 || (parts.Length > 2 && parts[2].Trim().StartsWith("memo ")))
                     {
-                        parts[4] = replaceTokensForTo(parts[4], context);
-                        string[] saveParts = Regex.Split(parts[4].Trim(), @"\s{1,}");
+                        var currenPath = parts[2].Trim().StartsWith("memo ") ? parts[2] : parts[4];
+
+                        var currenPathParts = currenPath.Split('|');
+                        currenPath = currenPathParts[0].Trim();
+                        string appendFile;
+                        if (currenPathParts.Length > 1)
+                        {
+                            var pathVariables = currenPathParts[1].Trim();
+                            if (pathVariables.Contains("{{&"))
+                            {
+                                string ptn = @"(?<={{&).*?(?=}})";
+
+                                var result = Regex.Matches(pathVariables, ptn);
+                                foreach (Match o in result)
+                                {
+                                    if (o.Success)
+                                    {
+                                        pathVariables = pathVariables.Replace("{{&" + o.Value + "}}", replaceTokensForTo("{{{&" + o.Value + "}}}", context));
+                                    }
+                                }
+                            }
+
+                            if (!string.IsNullOrEmpty(pathVariables))
+                            {
+                                appendFile = "_" + pathVariables.Trim();
+                            }
+                            else
+                            {
+                                appendFile = "";
+                            }
+                        }
+                        else
+                        {
+                            appendFile = "";
+                        }
+                        currenPath = replaceTokensForTo(currenPath, context);
+                        string[] saveParts = Regex.Split(currenPath.Trim(), @"\s{1,}");
                         if (saveParts.Length > 1)
                         {
                             if (saveParts[0].Trim().ToLower() == "save")
@@ -379,24 +414,24 @@
                             {
                                 enableMemoization = true;
                                 var ext = Path.GetExtension(context.Request.Url.LocalPath);
-                                saveFile = saveParts[1].Trim().TrimEnd('/','\\');
-                               
+                                saveFile = saveParts[1].Trim().TrimEnd('/', '\\');
+
                                 if (!ServeMe.IsPathRooted(saveFile))
                                 {
-                                    saveFile=Path.Combine(ServeMe. CurrentPath, saveFile);
+                                    saveFile = Path.Combine(ServeMe.CurrentPath, saveFile);
                                 }
                                 else
                                 {
-                                    
                                 }
-                               // saveFile = string.IsNullOrEmpty(ext) ? Path.GetFileName(saveFile) : Path.GetDirectoryName(saveFile);
+                                // saveFile = string.IsNullOrEmpty(ext) ? Path.GetFileName(saveFile) : Path.GetDirectoryName(saveFile);
                                 if (!Directory.Exists(saveFile))
                                 {
                                     Directory.CreateDirectory(saveFile);
                                 }
 
                                 var finalExtension = string.IsNullOrEmpty(ext) ? "json" : ext;
-                                saveFile = saveFile+ "\\{{file}}"+$".{finalExtension}";
+
+                                saveFile = saveFile + "\\{{flatpath}}" + $"{appendFile}.{finalExtension}";
                                 saveFile = replaceTokensForTo(saveFile, context);
                                 memoizationFile = saveFile;
                             }
@@ -502,13 +537,10 @@
                         }
                     }
 
-                 
                     string authType = null;
                     string userName = null;
                     string password = null;
                     bool saveAsServed = false;
-                 
-                  
 
                     if (toParts.Length > 3)
                         if (toParts[1].Trim().ToLower() == "auth")
@@ -526,7 +558,7 @@
                     string filter = null;
                     bool isJsonP = false;
                     if (parts.Length > 2)
-                        if (!string.IsNullOrEmpty(parts[2].Trim()))
+                        if (!string.IsNullOrEmpty(parts[2].Trim()) && !parts[2].Trim().ToLower().StartsWith("memo "))
                         {
                             expectedMethodFrom = parts[2].Trim().ToUpper();
                             expectedMethodFrom = replaceTokensForTo(expectedMethodFrom, context);
@@ -591,20 +623,26 @@
                                                                    | SecurityProtocolType.Tls12
                                                                    | SecurityProtocolType.Ssl3;
                             HttpResponseMessage response;
-                            if (!enableMemoization ||  (enableMemoization && !File.Exists(memoizationFile)))
+                            if (!enableMemoization || (enableMemoization && !File.Exists(memoizationFile)))
                             {
                                 response = this.Send(request, this.ServeMe.Log);
                             }
                             else
                             {
                                 var resturns = File.ReadAllText(memoizationFile);
-                                response =new HttpResponseMessage(HttpStatusCode.OK)
+                                var isPotentiallyJsonP = resturns.Trim().ToLower().StartsWith("jquery") &&
+                                                       resturns.Trim().ToLower().EndsWith(")");
+                                if (isPotentiallyJsonP)
+                                {
+                                    isJsonP = true;
+                                    resturns = resturns.Split(new[] { '(' }, 2)[1].TrimEnd(')');
+                                }
+                                response = new HttpResponseMessage(HttpStatusCode.OK)
                                 {
                                     Content = new StringContent(resturns)
                                 };
                             }
                             //expectedMethod
-                            
 
                             this.ServeMe.Log($"Get {response.StatusCode} response from call to {to} ");
 
@@ -647,8 +685,9 @@
 
                                 stringResponse = this.ServeMe.ExecuteTemplate(stringResponse);
 
-                                if (!string.IsNullOrEmpty(saveFile))
+                                if (!string.IsNullOrEmpty(saveFile) && (!enableMemoization || (enableMemoization && !File.Exists(memoizationFile))))
                                 {
+                                    //
                                     this.ServeMe.Log($"Saving to file {saveFile}...");
 
                                     if (!string.IsNullOrEmpty(find) && !string.IsNullOrEmpty(replace))
@@ -800,8 +839,11 @@
                 to = replaceTokensForToInt(tokensPasts, to, i);
             }
 
-            to = to.Replace("{{query}}", context.Request.Url.Query.Replace("?", ""));
+            var query = context.Request.Url.Query != null ? context.Request.Url.Query.Replace("?", "") : "";
+
+            to = to.Replace("{{query}}", query);
             to = to.Replace("{{file}}", context.Request.Url.Segments.Last().Replace("/", "").Replace("?", ""));
+            to = to.Replace("{{flatpath}}", context.Request.Url.AbsolutePath.TrimStart('/').TrimEnd('/').Replace("/", "_"));
             to = to.Replace("{{root}}", context.Request.Url.Scheme + "://" + context.Request.Url.Authority);
             to = to.Replace("{{port}}", context.Request.Url.Port.ToString());
             to = to.Replace("{{scheme}}", context.Request.Url.Scheme.ToString());
@@ -814,6 +856,27 @@
             to = to.Replace("{{httpurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://", "http://"));
             to = to.Replace("{{httpsurl}}", context.Request.Url.ToString().Replace(context.Request.Url.Scheme + "://", "https://"));
 
+            if (query != null)
+            {
+                foreach (var tuple in query.Split('&').Select(x => x.Split('=')).Where(x => x != null && x.Length == 2).Select(x => new Tuple<string, string>($"{x[0]}", x[1])).ToList())
+                {
+                    to = to.Replace("{{{&" + $"{tuple.Item1}" + "}}}", tuple.Item1 + "_" + tuple.Item2);
+                    to = to.Replace("{{&" + $"{tuple.Item1}" + "}}", tuple.Item2);
+                }
+            }
+            if (to.Contains("{{{&"))
+            {
+                string ptn = @"(?<={{{&).*?(?=}}})";
+
+                var result = Regex.Matches(to, ptn);
+                foreach (Match o in result)
+                {
+                    if (o.Success)
+                    {
+                        to = to.Replace("{{{&" + o.Value + "}}}", "");
+                    }
+                }
+            }
             return to;
         }
 
@@ -941,7 +1004,7 @@
                         Console.WriteLine(documentContents);
 
                         request.Content =
-                            new StringContent(documentContents,requestInfo.ContentEncoding,requestInfo.ContentType.Split(';')[0]);//"application/json" <-- could intercept here
+                            new StringContent(documentContents, requestInfo.ContentEncoding, requestInfo.ContentType.Split(';')[0]);//"application/json" <-- could intercept here
                     }
                 }
 

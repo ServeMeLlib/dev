@@ -325,6 +325,130 @@ namespace ServeMe.Tests
         }
         
         [TestMethod]
+        public void memoization_test2_part2()
+        {
+            new List<string>
+            {
+                ServeMe.TestCurrentDirectory+"\\" +Guid.NewGuid().ToString()+"\\hoooo.json\\",
+                ServeMe.TestCurrentDirectory+"\\" +Guid.NewGuid().ToString()+"\\hoooo.json",
+                Guid.NewGuid().ToString()+"\\hoooo.json",
+                Guid.NewGuid().ToString()+"\\hoooo.json\\",
+                Guid.NewGuid().ToString()+"\\hoooo.json",
+               "hoooo.json\\",
+               "hoooo.json",
+               "hoooo",
+            }.ForEach(memoPath =>
+            {
+        var apiPath = "getSome";
+            var finalFileName = memoPath.TrimEnd('/', '\\')+"\\" + apiPath + ".json";
+            //use saveasserved to save with same file name as served
+            string serverCsv = $"app dir,{ServeMe.TestCurrentDirectory}\n{apiPath},http://www.google.com,memo {memoPath}";
+            using (var serveMe = new ServeMe())
+            {
+                if (Directory.Exists(memoPath))
+                    Directory.Delete(memoPath);
+                Assert.IsFalse(File.Exists(memoPath));
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                string url = serveMe.Start().First();
+              
+                HttpWebResponse result = (url + "/"+ apiPath).HttpGet();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+
+                HttpWebResponse result2 = (url + "/" + apiPath).HttpGet();
+                string finalResult2 = result2.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult2.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result2.StatusCode);
+
+
+                    Assert.IsTrue(Directory.Exists(memoPath));
+                Assert.IsTrue(File.ReadAllText(finalFileName).StartsWith("<!doc"));
+                if (Directory.Exists(memoPath))
+                {
+                    Directory.Delete(memoPath,true);
+                    var parent = Directory.GetParent(memoPath.TrimEnd('/', '\\')).FullName;
+                    Thread.Sleep(200);
+                    try
+                    {
+                        Directory.Delete(parent);
+                    }
+                    catch (Exception e)
+                    {
+                       
+                    }
+                }
+                Assert.IsFalse(Directory.Exists(memoPath));
+            }
+            });
+
+
+           
+        }
+        [TestMethod]
+        public void memoization_test2_part2_cacheById()
+        {
+            new List<string>
+            {
+                ServeMe.TestCurrentDirectory+"\\" +Guid.NewGuid().ToString()+"\\hoooo.json\\",
+                ServeMe.TestCurrentDirectory+"\\" +Guid.NewGuid().ToString()+"\\hoooo.json",
+                Guid.NewGuid().ToString()+"\\hoooo.json",
+                Guid.NewGuid().ToString()+"\\hoooo.json\\",
+                Guid.NewGuid().ToString()+"\\hoooo.json",
+               "hoooo.json\\",
+               "hoooo.json",
+               "hoooo",
+            }.ForEach(memoPath =>
+            {
+            var apiPath = "getSome";
+            var queryName = "images";
+            var query = "true";
+            var finalFileName = memoPath.TrimEnd('/', '\\')+"\\" + apiPath + $"_{queryName}_{query}.json";
+            //use saveasserved to save with same file name as served
+            string serverCsv = $"app dir,{ServeMe.TestCurrentDirectory}\n{apiPath},http://www.google.com,memo {memoPath} | "+"{{&images}}";
+            using (var serveMe = new ServeMe())
+            {
+                if (Directory.Exists(memoPath))
+                    Directory.Delete(memoPath);
+                Assert.IsFalse(File.Exists(memoPath));
+                serveMe.AppendToInMemoryConfiguration(serverCsv);
+                string url = serveMe.Start().First();
+              
+                HttpWebResponse result = (url + "/"+ apiPath+$"?{queryName}={query}").HttpGet();
+                string finalResult = result.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+
+                HttpWebResponse result2 = (url + "/" + apiPath + $"?{queryName}={query}").HttpGet();
+                string finalResult2 = result2.ReadStringFromResponse().Trim().ToLower();
+                Assert.IsTrue(finalResult2.StartsWith("<!doc"));
+                Assert.AreEqual(HttpStatusCode.OK, result2.StatusCode);
+
+
+                    Assert.IsTrue(Directory.Exists(memoPath));
+                Assert.IsTrue(File.ReadAllText(finalFileName).StartsWith("<!doc"));
+                if (Directory.Exists(memoPath))
+                {
+                    Directory.Delete(memoPath,true);
+                    var parent = Directory.GetParent(memoPath.TrimEnd('/', '\\')).FullName;
+                    Thread.Sleep(200);
+                    try
+                    {
+                        Directory.Delete(parent);
+                    }
+                    catch (Exception e)
+                    {
+                       
+                    }
+                }
+                Assert.IsFalse(Directory.Exists(memoPath));
+            }
+            });
+
+
+           
+        }
+        [TestMethod]
         public void memoization_test2()
         {
             new List<string>

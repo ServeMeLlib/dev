@@ -12,7 +12,7 @@
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.34.0";
+        public static string Version = "0.35.0";
 
         public  string CurrentPath = null;
        
