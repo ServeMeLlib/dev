@@ -12,10 +12,11 @@
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.33.0";
+        public static string Version = "0.34.0";
 
         public  string CurrentPath = null;
        
+        public static string TestCurrentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase).Replace("file:/", "").Replace("file:\\", "");
         internal static string CurrentDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
         internal static string serverFileName = ServeMe.CurrentDirectory + "\\server.csv";
         internal  void SetWorkingDirectory(string dir = null)
@@ -37,9 +38,31 @@
         private readonly object padlock = new object();
         internal Func<string, bool> FileExists = fn => File.Exists(fn);
         internal Func<string, string> ReadAllTextFromFile = fn => File.ReadAllText(fn);
+        internal Action<string, string> WriteAllTextToFileIntercept = null;
+        internal void WriteAllTextToFile  (string fn, string txt) 
+        {
+            if (WriteAllTextToFileIntercept != null)
+            {
+                WriteAllTextToFileIntercept(fn, txt);
+                return;
+            }
+            
+            if (ServeMe.IsPathRooted(fn))
+            {
+              File.WriteAllText(fn, txt);
+            }
+            else
+            {
+                File.WriteAllText(Path.Combine(CurrentPath, fn), txt);
+            }
+          
+        }
 
-        internal Action<string, string> WriteAllTextToFile = (fn, txt) => File.WriteAllText(fn, txt);
-
+        internal static bool IsPathRooted(string fn)
+        {
+            return Path.IsPathRooted(fn)
+                   && !Path.GetPathRoot(fn).Equals(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal);
+        }
         internal string ServerCsv { set; get; }
 
         internal SimpleHttpServer MyServer { get; set; }
@@ -64,6 +87,10 @@
             return instruction;
         }
 
+        /// <summary>
+        /// Call this method before 'Start'
+        /// </summary>
+        /// <param name="config"></param>
         public void AppendToInMemoryConfiguration(string config)
         {
             this.InMemoryConfigurationAppend = this.InMemoryConfigurationAppend + "\n" + config;
@@ -241,14 +268,50 @@
 
             return true;
         }
+        internal static string UrlCombine(string url1, string url2)
+        {
+            if (url1.Length == 0)
+            {
+                return url2;
+            }
 
-        internal bool CanOpenDefaultBrowserOnStart()
+            if (url2.Length == 0)
+            {
+                return url1;
+            }
+
+            url1 = url1.TrimEnd('/', '\\');
+            url2 = url2.TrimStart('/', '\\');
+
+            return string.Format("{0}/{1}", url1, url2);
+        }
+        internal string CanOpenDefaultBrowserOnStart(string root)
         {
             string[] data;
-            if (this.ExtractFromSettings("app openDefaultBrowserOnStartUp", out data) != 0)
-                return true;
+            int count = this.ExtractFromSettings("app openDefaultBrowserOnStartUp", out data);
+            if (count != 0)
+            {
+                if (count > 1)
+                {
+                    string fileName = data[1].Trim();
+                    if (ServeMe.IsPathRooted(fileName))
+                    {
+                        return fileName;
+                    }
+                    else
+                    {
+                        var finalPath = UrlCombine(root, fileName.Replace("\\\\","/").Replace("\\","/"));
+                        return finalPath;
+                    }
+                        
+                }
+                else
+                {
+                    return root;
+                }
+            }
 
-            return false;
+            return null;
         }
 
         //https://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
@@ -317,7 +380,7 @@
         {
             this.FileExists = fileExists ?? this.FileExists;
             this.ReadAllTextFromFile = readAllTextFromFile ?? this.ReadAllTextFromFile;
-            this.WriteAllTextToFile = writeAllTextToFile ?? this.WriteAllTextToFile;
+            this.WriteAllTextToFileIntercept = writeAllTextToFile ;
             this.ServerCsv = serverCsv;
             var endpoints = new List<string>();
 

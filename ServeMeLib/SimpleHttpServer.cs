@@ -225,6 +225,7 @@
 
             string responseCode = "";
             string content = this.ServeMe.GetSeUpContent();
+           // bool enableMemoization = false;
             if (!string.IsNullOrEmpty(content))
             {
                 this.ServeMe.Log("Searching for matching setting ...");
@@ -253,6 +254,13 @@
                     string from = parts[0].ToLower().Trim();
 
                     from = replaceTokensForTo(from, context);
+
+                    //enableMemoization = from.Trim().ToLower().StartsWith("memo ");
+
+                    //if (enableMemoization)
+                    //{
+                    //    from = from.TrimStart().Replace("memo ", "");
+                    //}
 
                     string[] fromParts = from.Split(' ');
                     //todo remove duplicate codes all over here
@@ -344,6 +352,62 @@
                     string[] toPossiblePartsPart = parts[1].Trim().Split(new[] { ' ' }, 2);
                     bool expectedJson = false;
                     string toFirstPart = toPossiblePartsPart[0].Trim().ToLower();
+
+                    bool enableMemoization = false;
+                    string memoizationFile = null;
+                    string saveFile = null;
+                    string find = null;
+                    string replace = null;
+                    if (parts.Length > 4)
+                    {
+                        parts[4] = replaceTokensForTo(parts[4], context);
+                        string[] saveParts = Regex.Split(parts[4].Trim(), @"\s{1,}");
+                        if (saveParts.Length > 1)
+                        {
+                            if (saveParts[0].Trim().ToLower() == "save")
+                            {
+                                saveFile = saveParts[1].Trim();
+                            }
+                            else if (saveParts[0].Trim().ToLower() == "saveasserved")
+                            {
+                                if (context.Request.Url.IsFile)
+                                    saveFile = Path.GetFileName(context.Request.Url.LocalPath);
+                                else
+                                    saveFile = saveParts[1].Trim();
+                            }
+                            else if (saveParts[0].Trim().ToLower() == "memo")
+                            {
+                                enableMemoization = true;
+                                var ext = Path.GetExtension(context.Request.Url.LocalPath);
+                                saveFile = saveParts[1].Trim().TrimEnd('/','\\');
+                               
+                                if (!ServeMe.IsPathRooted(saveFile))
+                                {
+                                    saveFile=Path.Combine(ServeMe. CurrentPath, saveFile);
+                                }
+                                else
+                                {
+                                    
+                                }
+                               // saveFile = string.IsNullOrEmpty(ext) ? Path.GetFileName(saveFile) : Path.GetDirectoryName(saveFile);
+                                if (!Directory.Exists(saveFile))
+                                {
+                                    Directory.CreateDirectory(saveFile);
+                                }
+
+                                var finalExtension = string.IsNullOrEmpty(ext) ? "json" : ext;
+                                saveFile = saveFile+ "\\{{file}}"+$".{finalExtension}";
+                                saveFile = replaceTokensForTo(saveFile, context);
+                                memoizationFile = saveFile;
+                            }
+                        }
+
+                        if (saveParts.Length > 3)
+                        {
+                            find = saveParts[2].Trim();
+                            replace = saveParts[3].Trim();
+                        }
+                    }
                     if (toPossiblePartsPart.Length > 1)
                     {
                         this.ServeMe.Log($"Response is expected to be {toFirstPart}");
@@ -438,35 +502,13 @@
                         }
                     }
 
-                    string saveFile = null;
+                 
                     string authType = null;
                     string userName = null;
                     string password = null;
                     bool saveAsServed = false;
-                    string find = null;
-                    string replace = null;
-                    if (parts.Length > 4)
-                    {
-                        string[] saveParts = Regex.Split(parts[4].Trim(), @"\s{1,}");
-                        if (saveParts.Length > 1)
-                        {
-                            if (saveParts[0].Trim().ToLower() == "save")
-                                saveFile = saveParts[1].Trim();
-                            if (saveParts[0].Trim().ToLower() == "saveasserved")
-                            {
-                                if (context.Request.Url.IsFile)
-                                    saveFile = Path.GetFileName(context.Request.Url.LocalPath);
-                                else
-                                    saveFile = saveParts[1].Trim();
-                            }
-                        }
-
-                        if (saveParts.Length > 3)
-                        {
-                            find = saveParts[2].Trim();
-                            replace = saveParts[3].Trim();
-                        }
-                    }
+                 
+                  
 
                     if (toParts.Length > 3)
                         if (toParts[1].Trim().ToLower() == "auth")
@@ -548,8 +590,21 @@
                                                                    | SecurityProtocolType.Tls11
                                                                    | SecurityProtocolType.Tls12
                                                                    | SecurityProtocolType.Ssl3;
+                            HttpResponseMessage response;
+                            if (!enableMemoization ||  (enableMemoization && !File.Exists(memoizationFile)))
+                            {
+                                response = this.Send(request, this.ServeMe.Log);
+                            }
+                            else
+                            {
+                                var resturns = File.ReadAllText(memoizationFile);
+                                response =new HttpResponseMessage(HttpStatusCode.OK)
+                                {
+                                    Content = new StringContent(resturns)
+                                };
+                            }
                             //expectedMethod
-                            HttpResponseMessage response = this.Send(request, this.ServeMe.Log);
+                            
 
                             this.ServeMe.Log($"Get {response.StatusCode} response from call to {to} ");
 

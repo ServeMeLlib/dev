@@ -22,7 +22,7 @@
 
             string instruction = ServeMe.GetMethodExecutionInstruction(this.GetType(), methodName, arg);
 
-            string serverCsv = @"getSome,assembly " + instruction + ",get";
+            string serverCsv = @"getSome,assembly " + instruction + ",get"; 
             //getSome,assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get
             using (var serveMe = new ServeMe())
             {
@@ -108,7 +108,7 @@
         public void it_can_write_response_to_file()
         {
             //use saveasserved to save with same file name as served
-            string serverCsv = @"getSome,http://www.google.com,get,200,save data.json find replace";
+            string serverCsv = $"app dir,{ServeMe.TestCurrentDirectory}\ngetSome,http://www.google.com,get,200,save data.json find replace";
             using (var serveMe = new ServeMe())
             {
                 if (File.Exists("data.json"))
