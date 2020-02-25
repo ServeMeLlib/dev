@@ -12,7 +12,13 @@
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.35.0";
+        public static string Version = "0.36.0";
+
+        internal static Action<Exception, string> _onError = null;
+        public static void OnError(Action<Exception,string> handler)
+        {
+            _onError = handler;
+        }
 
         public  string CurrentPath = null;
        
@@ -233,6 +239,7 @@
                     {
                         Console.WriteLine("Error while trying to perform replacements using " + data[1]);
                         Console.WriteLine(e);
+                        ServeMe._onError?.Invoke(e, "Error while trying to perform replacements using " + data[1]);
                     }
             }
 
@@ -259,6 +266,7 @@
                         {
                             Console.WriteLine("Error while trying to log to " + data[1]);
                             Console.WriteLine(e);
+                            ServeMe._onError?.Invoke(e, "Error while trying to log to " + data[1]);
                         }
                     }
 
@@ -456,6 +464,7 @@
             }
             catch (Exception e)
             {
+                ServeMe._onError?.Invoke(e, "");
                 Console.WriteLine(e);
                 return new List<string>();
             }

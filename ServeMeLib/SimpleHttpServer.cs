@@ -197,6 +197,7 @@
                 {
                     try
                     {
+                        ServeMe._onError?.Invoke(ex, "");
                         this.ServeMe.Log(ex.Message + " " + ex.InnerException?.Message);
                         //Console.WriteLine(ex);
                         if (context?.Response != null)
@@ -209,6 +210,8 @@
                     {
                         Console.WriteLine(e);
                         this.ServeMe.Log("FATAL ERROR :" + e.Message + " " + e.InnerException?.Message);
+                        ServeMe._onError?.Invoke(e, "FATAL ERROR :" + e.Message + " " + e.InnerException?.Message);
+                       
                     }
                 }
             }
@@ -429,10 +432,24 @@
                                     Directory.CreateDirectory(saveFile);
                                 }
 
-                                var finalExtension = string.IsNullOrEmpty(ext) ? "json" : ext;
+                                var finalExtension = string.IsNullOrEmpty(ext) ? ".json" : ext;
 
-                                saveFile = saveFile + "\\{{flatpath}}" + $"{appendFile}.{finalExtension}";
+                                saveFile = saveFile + "\\{{flatpathdir}}" + $"{appendFile}";
                                 saveFile = replaceTokensForTo(saveFile, context);
+                                if (string.IsNullOrEmpty(saveFile) || saveFile.EndsWith("/")|| saveFile.EndsWith("\\"))
+                                {
+                                    saveFile = saveFile.TrimEnd('/');
+                                    saveFile = saveFile+ "index.html";
+                                }
+                                else
+                                {
+                                    saveFile = saveFile + finalExtension;
+                                }
+                                var fileInfo = new FileInfo(saveFile);
+                                if (!Directory.Exists(fileInfo.DirectoryName))
+                                {
+                                    Directory.CreateDirectory(fileInfo.DirectoryName);
+                                }
                                 memoizationFile = saveFile;
                             }
                         }
@@ -637,10 +654,25 @@
                                     isJsonP = true;
                                     resturns = resturns.Split(new[] { '(' }, 2)[1].TrimEnd(')');
                                 }
+
+                                string medType=null;
+                                if (File.Exists(memoizationFile + ".mediatype"))
+                                {
+                                     medType = File.ReadAllText(memoizationFile + ".mediatype");
+                                }
                                 response = new HttpResponseMessage(HttpStatusCode.OK)
                                 {
                                     Content = new StringContent(resturns)
+                                    {
+                                       Headers = { }
+                                    }
                                 };
+                                if (!string.IsNullOrEmpty(medType))
+                                {
+                                    response.Content.Headers.ContentType = new MediaTypeHeaderValue(medType);
+                                }
+                                
+
                             }
                             //expectedMethod
 
@@ -650,7 +682,7 @@
                             if (response.Content.Headers.ContentType != null)
                                 context.Response.ContentType = response.Content.Headers.ContentType.MediaType;
                             string mediaType = response.Content.Headers.ContentType?.MediaType?.ToLower() ?? "";
-                            if (mediaType.Contains("text") || mediaType.Contains("json") || mediaType.Contains("javascript"))
+                            if (mediaType.Contains("text") || mediaType.Contains("json") || mediaType.Contains("javascript") || mediaType.Contains("xml"))
                             {
                                 string stringResponse = response.Content.ReadAsStringAsync().Result;
 
@@ -695,6 +727,11 @@
                                     lock (this.PadLock)
                                     {
                                         this.ServeMe.WriteAllTextToFile(saveFile, stringResponse);
+                                        //string mediaType = response.Content.Headers.ContentType?.MediaType?.ToLower() ?? "";
+                                        if (!string.IsNullOrEmpty(mediaType))
+                                        {
+                                            this.ServeMe.WriteAllTextToFile(saveFile+$".mediatype", mediaType);
+                                        }
                                     }
                                 }
 
@@ -820,6 +857,7 @@
                     {
                         this.ServeMe.Log($"Error occured while returning resource {filename} : {ex.Message} {ex.InnerException?.Message}");
                         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        ServeMe._onError?.Invoke(ex, $"Error occured while returning resource {filename} : {ex.Message} {ex.InnerException?.Message}");
                     }
                 }
             }
@@ -840,10 +878,11 @@
             }
 
             var query = context.Request.Url.Query != null ? context.Request.Url.Query.Replace("?", "") : "";
-
+            var nflatapp = context.Request.Url.AbsolutePath.AppTrimEnd(Path.GetExtension(context.Request.Url.AbsolutePath));
             to = to.Replace("{{query}}", query);
             to = to.Replace("{{file}}", context.Request.Url.Segments.Last().Replace("/", "").Replace("?", ""));
-            to = to.Replace("{{flatpath}}", context.Request.Url.AbsolutePath.TrimStart('/').TrimEnd('/').Replace("/", "_"));
+            to = to.Replace("{{flatpath}}", nflatapp.TrimStart('/').TrimEnd('/').Replace("/", "_"));
+            to = to.Replace("{{flatpathdir}}", nflatapp);
             to = to.Replace("{{root}}", context.Request.Url.Scheme + "://" + context.Request.Url.Authority);
             to = to.Replace("{{port}}", context.Request.Url.Port.ToString());
             to = to.Replace("{{scheme}}", context.Request.Url.Scheme.ToString());
@@ -938,9 +977,10 @@
                 string errorMessage = e.Message;
                 if (e.InnerException != null)
                     errorMessage += " - " + e.InnerException.Message;
-
-                Log(new[] { $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}", errorMessage });
+                var msg = $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}";
+                Log(new[] {msg , errorMessage });
                 onError?.Invoke(e);
+                ServeMe._onError?.Invoke(e,msg);
                 return new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.BadGateway,
@@ -951,8 +991,10 @@
             {
                 // For instance, on some OSes, .NET Core doesn't yet
                 // support ServerCertificateCustomValidationCallback
-                Log(new[] { $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}" });
+                var msg = $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}";
+                Log(new[] { msg });
                 onError?.Invoke(e);
+                ServeMe._onError?.Invoke(e, msg);
                 return new HttpResponseMessage
                 {
                     StatusCode = 0,
@@ -961,8 +1003,10 @@
             }
             catch (TaskCanceledException e)
             {
-                Log(new[] { $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}" });
+                var msg = $"{e.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}";
+                Log(new[] { msg });
                 onError?.Invoke(e);
+                ServeMe._onError?.Invoke(e, msg);
                 return new HttpResponseMessage
                 {
                     StatusCode = 0,
@@ -977,8 +1021,9 @@
                 if (ex.InnerException != null)
                     message += ':' + ex.InnerException.Message;
 
-                Log(new[] { $"{ex.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}", message });
-
+                var msg = $"{ex.GetType().Name} Error while sending {request.Method} request to {request?.RequestUri}";
+                Log(new[] { msg, message });
+                ServeMe._onError?.Invoke(ex, msg);
                 response.Content = new StringContent(message);
                 Trace.TraceError("Error:{0}", message);
                 onError?.Invoke(ex);
@@ -1175,6 +1220,8 @@
             }
             catch (Exception e)
             {
+                ServeMe._onError?.Invoke(e,"");
+
                 return e;
             }
         }

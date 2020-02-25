@@ -193,6 +193,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
                             Console.WriteLine(e.Message + " " + e.InnerException?.Message);
+                            ServeMe._onError?.Invoke(e, "");
                         }
                     }
                     while (true);
@@ -658,6 +659,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                 }
                 catch (Exception e)
                 {
+                    ServeMe._onError?.Invoke(e, "");
                     Console.WriteLine(e);
                 }
 
@@ -982,6 +984,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                         catch (Exception e)
                         {
                             Console.WriteLine(e);
+                            ServeMe._onError?.Invoke(e, "");
                         }
 
                         willRunAgain = isForever || --repeatCount > 0;
@@ -1190,6 +1193,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             }
             catch (Exception e)
             {
+                ServeMe._onError?.Invoke(e, "Error Processing ExecuteCommand : " + e.Message);
                 Console.WriteLine("Error Processing ExecuteCommand : " + e.Message);
             }
 
@@ -1259,6 +1263,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             }
             catch (Exception e)
             {
+                ServeMe._onError?.Invoke(e,"");
                 Console.WriteLine(e);
             }
         }
@@ -1370,8 +1375,9 @@ watchpath [file or path location] [command] <--- watch directory for changes and
             {
                 Process.Start(proc);
             }
-            catch
+            catch(Exception e)
             {
+                ServeMe._onError?.Invoke(e, "This application needs to run as admin");
                 ConsoleWriteLine("This application needs to run as admin");
             }
         }

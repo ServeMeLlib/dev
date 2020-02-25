@@ -59,6 +59,7 @@ namespace ServeMe.Tests
             }
             catch (Exception e)
             {
+
             }
         }
 
