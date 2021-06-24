@@ -158,6 +158,9 @@ The script can be something like this
 The server entry will be 
 `getSome,sourcecode csharp code.txt,get`
 
+The class will be auto loaded from 
+`code.txt.classes`
+
 so a get to /getsome will return the value of  DateTime.UtcNow;
 
 

@@ -1,4 +1,6 @@
-﻿namespace ServeMeLib
+﻿using System.Runtime.Serialization.Json;
+
+namespace ServeMeLib
 {
     using Microsoft.CSharp;
     using System;
@@ -16,7 +18,7 @@
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
-
+    using System.Web.Script.Serialization;
     internal class SimpleHttpServer
     {
         private static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
@@ -499,11 +501,12 @@
                             object result = null;
 
                             string source = File.ReadAllText(filen);
+                            string classes = File.Exists(filen + ".classes")? File.ReadAllText(filen+".classes"):"";
                             if (!string.IsNullOrEmpty(source))
                             {
                                 if (lang.ToLower() == "csharp")
                                 {
-                                    result = toParts.Length > 2 ? Execute(source, toParts[2].Trim()) : Execute(source);
+                                    result = toParts.Length > 2 ? Execute(source, classes, toParts[2].Trim()) : Execute(source, classes);
                                     to = result.ToString();
                                 }
                                 else if (lang.ToLower() == "javascript")
@@ -1121,8 +1124,30 @@
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        public static object Execute(string body, params object[] args)
+        public static object Execute(string body,string classes, params object[] args)
         {
+         
+            classes = classes ?? "";
+            classes = classes + @"
+public static class Helpers{
+
+                   public  static object ToJson(object obj)
+                        {
+                            try{
+                                 
+                                  return new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(obj); 
+                          }catch(Exception e){return e;}
+                        }
+                   public  static dynamic FromJson<T>(string obj)
+                        {
+                            try{
+                                  return new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<T>(obj); 
+                          }catch(Exception e){return e;}
+                        }
+
+}
+
+";
             try
             {
                 if (args != null && args.Length == 0)
@@ -1179,7 +1204,7 @@
 
                 string function = args == null
                     ? @"
-
+                        " + classes + @"
                         public object " + methodName + @"()
                         {
                             try{" + body + @";" + returnStatement + @"}catch(Exception e){return e;}
@@ -1191,6 +1216,7 @@
                     @"namespace  " + NameSpaceName + @"
                 {
                     " + namespaces + @"
+                    " + classes + @"
                     public class  " + className + @"
                     {
                         public object " + methodNameHost + @"(params object[] args)
