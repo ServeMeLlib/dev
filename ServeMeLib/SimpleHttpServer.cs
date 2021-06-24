@@ -506,7 +506,7 @@ namespace ServeMeLib
                             {
                                 if (lang.ToLower() == "csharp")
                                 {
-                                    result = toParts.Length > 2 ? Execute(source, classes, toParts[2].Trim()) : Execute(source, classes);
+                                    result = toParts.Length > 2 ? Execute(source, classes, context, toParts[2].Trim()) : Execute(source, classes, context);
                                     to = result.ToString();
                                 }
                                 else if (lang.ToLower() == "javascript")
@@ -1124,10 +1124,10 @@ namespace ServeMeLib
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        public static object Execute(string body,string classes, params object[] args)
+        public static object Execute(string body,string classes, HttpListenerContext context, params object[] args)
         {
          
-            classes = classes ?? "";
+               classes = classes ?? "";
             classes = classes + @"
 public static class Helpers{
 
@@ -1202,15 +1202,17 @@ public static class Helpers{
                     }
                 }
 
-                string function = args == null
-                    ? @"
+                args = args ?? new object[] { };
+                string function = //args == null
+                    //? 
+                    @"
                         " + classes + @"
-                        public object " + methodName + @"()
+                        public object " + methodName + @"(HttpListenerContext context, params object[] args)
                         {
                             try{" + body + @";" + returnStatement + @"}catch(Exception e){return e;}
                         }
-                      "
-                    : body;
+                      ";
+                    //: body;
 
                 string source =
                     @"namespace  " + NameSpaceName + @"
@@ -1219,9 +1221,9 @@ public static class Helpers{
                     " + classes + @"
                     public class  " + className + @"
                     {
-                        public object " + methodNameHost + @"(params object[] args)
+                        public object " + methodNameHost + @"(HttpListenerContext context,params object[] args)
                         {
-                            return typeof(" + className + @").InvokeMember(""" + methodName + @""",BindingFlags.Default | BindingFlags.InvokeMethod,null, Activator.CreateInstance(typeof(" + className + @")), args);
+                            return typeof(" + className + @").InvokeMember(""" + methodName + @""",BindingFlags.Default | BindingFlags.InvokeMethod,null, Activator.CreateInstance(typeof(" + className + @")), new object[] { context,args });
                         }
                       " + function + @"
                     }
@@ -1241,7 +1243,7 @@ public static class Helpers{
 
                 object o = results.CompiledAssembly.CreateInstance(NameSpaceName + "." + className);
                 MethodInfo mi = o.GetType().GetMethod(methodNameHost);
-                object result = mi.Invoke(o, new object[] { args });
+                object result = mi.Invoke(o, new object[] { context,args });
                 return result;
             }
             catch (Exception e)

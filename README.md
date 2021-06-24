@@ -155,7 +155,7 @@ to return http://www.google.com content  when only GET and the path and query do
 ---- Ok, finally, how about this, imagine you'd like to execute a c sharp script that lives in a file. Here is how to do it in server.csv `getSome,sourcecode csharp xyz.txt w,get` . This will execute the script when ever a get request is made for /getSome
 The script can be something like this
 `return DateTime.UtcNow;` inside a file called, say, code.txt
-The server entry will be 
+The server entry will be (note that script has access to global variables context and args[] )
 `getSome,sourcecode csharp code.txt,get`
 
 The class will be auto loaded from 

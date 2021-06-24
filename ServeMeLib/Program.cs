@@ -877,7 +877,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                         
                             if (executionType == "code")
                             {
-                                object res = SimpleHttpServer.Execute(entry,null);
+                                object res = SimpleHttpServer.Execute(entry,null,null);
 
                                 Console.BackgroundColor = ConsoleColor.White;
                                 Console.ForegroundColor = ConsoleColor.Black;
@@ -894,7 +894,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                                 ConsoleWriteLine($"Loading sourcecode from file and executing it {sourceCodeFilename}...");
                                 string source = File.ReadAllText(sourceCodeFilename);
 
-                                object res = SimpleHttpServer.Execute(source,null);
+                                object res = SimpleHttpServer.Execute(source,null,null);
                                 Console.BackgroundColor = ConsoleColor.White;
                                 Console.ForegroundColor = ConsoleColor.Black;
                                 TrySaveResult(saveLocation, res == null ? "" : new JavaScriptSerializer().Serialize(res));
