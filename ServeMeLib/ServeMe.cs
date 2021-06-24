@@ -12,7 +12,7 @@
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.36.0";
+        public static string Version = "0.37.0";
 
         internal static Action<Exception, string> _onError = null;
         public static void OnError(Action<Exception,string> handler)
