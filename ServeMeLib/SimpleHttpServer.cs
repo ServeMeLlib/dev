@@ -21,6 +21,9 @@ namespace ServeMeLib
     using System.Web.Script.Serialization;
     internal class SimpleHttpServer
     {
+        //gen certificate 
+        //"C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\makecert.exe" -r -pe -n "CN=ServeMe" -b 01/01/2021 -e 01/01/2050 -sk serveme  -ss testCertStore ServeMeCert.cer
+
         private static readonly IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
         {
             #region extension to MIME type list
