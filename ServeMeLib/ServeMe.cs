@@ -1,4 +1,6 @@
-﻿namespace ServeMeLib
+﻿using System.Text.RegularExpressions;
+
+namespace ServeMeLib
 {
     using System;
     using System.Collections.Generic;
@@ -15,20 +17,20 @@
         public static string Version = "0.37.0";
 
         internal static Action<Exception, string> _onError = null;
-        public static void OnError(Action<Exception,string> handler)
+        public static void OnError(Action<Exception, string> handler)
         {
             _onError = handler;
         }
 
-        public  string CurrentPath = null;
-       
+        public string CurrentPath = null;
+
         public static string TestCurrentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase).Replace("file:/", "").Replace("file:\\", "");
         internal static string CurrentDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location ?? Directory.GetCurrentDirectory());
         internal static string serverFileName = ServeMe.CurrentDirectory + "\\server.csv";
-        internal  void SetWorkingDirectory(string dir = null)
+        internal void SetWorkingDirectory(string dir = null)
         {
-    
-            
+
+
             if (dir != null)
             {
                 CurrentPath = dir;
@@ -38,30 +40,31 @@
                 CurrentPath = CurrentPath ?? ServeMe.CurrentDirectory;
             }
 
-            
+
         }
 
         private readonly object padlock = new object();
+       
         internal Func<string, bool> FileExists = fn => File.Exists(fn);
         internal Func<string, string> ReadAllTextFromFile = fn => File.ReadAllText(fn);
         internal Action<string, string> WriteAllTextToFileIntercept = null;
-        internal void WriteAllTextToFile  (string fn, string txt) 
+        internal void WriteAllTextToFile(string fn, string txt)
         {
             if (WriteAllTextToFileIntercept != null)
             {
                 WriteAllTextToFileIntercept(fn, txt);
                 return;
             }
-            
+
             if (ServeMe.IsPathRooted(fn))
             {
-              File.WriteAllText(fn, txt);
+                File.WriteAllText(fn, txt);
             }
             else
             {
                 File.WriteAllText(Path.Combine(CurrentPath, fn), txt);
             }
-          
+
         }
 
         internal static bool IsPathRooted(string fn)
@@ -246,6 +249,74 @@
             return input;
         }
 
+        internal string[] GetSourceCodeClassNames(params string[] log)
+        {
+            string[] data;
+            int count = this.ExtractFromSettings("app classes", out data);
+            if (count != 0)
+            {
+                if (count > 1)
+
+                {
+                    return data.Skip(1).ToArray();
+                }
+
+
+            }
+
+            return new string[] { };
+        }
+        public  string ToJson(object obj)
+        {
+            try
+            {
+
+                return new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(obj);
+            }
+            catch (Exception e) { return e.Message; }
+        }
+        public  object FromJson<T>(string obj)
+        {
+            try
+            {
+                return new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<T>(obj);
+            }
+            catch (Exception e) { return e; }
+        }
+        public  string Storage(string key, string value = null)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            
+            {
+                try
+                {
+                    var db = "ServeMeStore";
+                    if (!Directory.Exists(db))
+                    {
+                        Directory.CreateDirectory(db);
+                    }
+
+                    var file = db + "/" + key + ".json";
+                    if (!File.Exists(file))
+                    {
+                        File.WriteAllText(file, "");
+                    }
+
+                    if (value != null)
+                    {
+                        File.WriteAllText(file, value);
+                    }
+                    return File.ReadAllText(file);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error during db operation " + e.Message);
+                    Console.WriteLine(e);
+                    ServeMe._onError?.Invoke(e, "Error during db operation" + e.Message);
+                }
+            }
+            return null;
+        }
         internal bool Log(params string[] log)
         {
             string[] data;
@@ -273,7 +344,6 @@
                 foreach (string s in log)
                     Console.WriteLine($"ServeMe {DateTime.Now} : " + s);
             }
-
             return true;
         }
         internal static string UrlCombine(string url1, string url2)
@@ -308,10 +378,10 @@
                     }
                     else
                     {
-                        var finalPath = UrlCombine(root, fileName.Replace("\\\\","/").Replace("\\","/"));
+                        var finalPath = UrlCombine(root, fileName.Replace("\\\\", "/").Replace("\\", "/"));
                         return finalPath;
                     }
-                        
+
                 }
                 else
                 {
@@ -388,7 +458,7 @@
         {
             this.FileExists = fileExists ?? this.FileExists;
             this.ReadAllTextFromFile = readAllTextFromFile ?? this.ReadAllTextFromFile;
-            this.WriteAllTextToFileIntercept = writeAllTextToFile ;
+            this.WriteAllTextToFileIntercept = writeAllTextToFile;
             this.ServerCsv = serverCsv;
             var endpoints = new List<string>();
 

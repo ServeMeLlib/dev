@@ -196,6 +196,7 @@ namespace ServeMeLib
                 try
                 {
                     context = this._listener.GetContext();
+                    
                     this.Process(context);
                 }
                 catch (Exception ex)
@@ -504,12 +505,28 @@ namespace ServeMeLib
                             object result = null;
 
                             string source = File.ReadAllText(filen);
-                            string classes = File.Exists(filen + ".classes")? File.ReadAllText(filen+".classes"):"";
+                            string extension = Path.GetExtension(filen);
+                            string classes = "";// File.Exists(filen + ".classes")? File.ReadAllText(filen+".classes"+ extension) :"";
+                            var allClasses = ServeMe.GetSourceCodeClassNames();
+                            for (var index = 0; index < allClasses.Length; index++)
+                            {
+                                var sourceCodeClassName = allClasses[index];
+                                sourceCodeClassName = sourceCodeClassName.Trim();
+                                if (File.Exists(sourceCodeClassName))
+                                {
+                                    classes += File.ReadAllText(sourceCodeClassName);
+                                }
+                                else
+                                {
+                                    ServeMe.Log($"ERROR : configured source code {sourceCodeClassName} does not exist");
+                                }
+                            }
+
                             if (!string.IsNullOrEmpty(source))
                             {
                                 if (lang.ToLower() == "csharp")
                                 {
-                                    result = toParts.Length > 2 ? Execute(source, classes, context, toParts[2].Trim()) : Execute(source, classes, context);
+                                    result = toParts.Length > 2 ? Execute(this.ServeMe,source, classes, context, toParts[2].Trim()) : Execute(this.ServeMe,source, classes, context);
                                     to = result.ToString();
                                 }
                                 else if (lang.ToLower() == "javascript")
@@ -1127,26 +1144,14 @@ namespace ServeMeLib
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
-        public static object Execute(string body,string classes, HttpListenerContext context, params object[] args)
+        public static object Execute(ServeMe sm,string body,string classes, HttpListenerContext context, params object[] args)
         {
          
                classes = classes ?? "";
             classes = classes + @"
 public static class Helpers{
 
-                   public  static object ToJson(object obj)
-                        {
-                            try{
-                                 
-                                  return new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(obj); 
-                          }catch(Exception e){return e;}
-                        }
-                   public  static dynamic FromJson<T>(string obj)
-                        {
-                            try{
-                                  return new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<T>(obj); 
-                          }catch(Exception e){return e;}
-                        }
+                 
 
 }
 
@@ -1191,26 +1196,31 @@ public static class Helpers{
                 string namespaces = "";
 
                 var dictionary = new Dictionary<string, string>();
-
-                foreach (AssemblyName assemblyName in Assembly.GetExecutingAssembly().GetReferencedAssemblies())
+                List<AssemblyName> assemblies = Assembly.GetExecutingAssembly().GetReferencedAssemblies().ToList();
+                assemblies.Add(Assembly.GetExecutingAssembly().GetName());
+               
+                    foreach (AssemblyName assemblyName in assemblies)
                 {
                     Assembly assembly = Assembly.Load(assemblyName);
                     foreach (Type type in assembly.GetTypes().Where(x => x.Namespace != null))
                     {
-                        if (dictionary.ContainsKey(type.Namespace))
+                        if (dictionary.ContainsKey(type.Namespace ?? string.Empty))
                             continue;
                         namespaces += "using " + type.Namespace + ";";
+                       
                         dictionary.Add(type.Namespace, type.Namespace);
                         compilerParams.ReferencedAssemblies.Add(type.Module.FullyQualifiedName);
                     }
                 }
+
+                    //namespaces += "using Microsoft.CSharp;";
 
                 args = args ?? new object[] { };
                 string function = //args == null
                     //? 
                     @"
                         " + classes + @"
-                        public object " + methodName + @"(HttpListenerContext context, params object[] args)
+                        public object " + methodName + @"(HttpListenerContext context,ServeMe _, params object[] args)
                         {
                             try{" + body + @";" + returnStatement + @"}catch(Exception e){return e;}
                         }
@@ -1224,9 +1234,9 @@ public static class Helpers{
                     " + classes + @"
                     public class  " + className + @"
                     {
-                        public object " + methodNameHost + @"(HttpListenerContext context,params object[] args)
+                        public object " + methodNameHost + @"(HttpListenerContext context,ServeMe sm,params object[] args)
                         {
-                            return typeof(" + className + @").InvokeMember(""" + methodName + @""",BindingFlags.Default | BindingFlags.InvokeMethod,null, Activator.CreateInstance(typeof(" + className + @")), new object[] { context,args });
+                            return typeof(" + className + @").InvokeMember(""" + methodName + @""",BindingFlags.Default | BindingFlags.InvokeMethod,null, Activator.CreateInstance(typeof(" + className + @")), new object[] { context,sm,args });
                         }
                       " + function + @"
                     }
@@ -1246,7 +1256,7 @@ public static class Helpers{
 
                 object o = results.CompiledAssembly.CreateInstance(NameSpaceName + "." + className);
                 MethodInfo mi = o.GetType().GetMethod(methodNameHost);
-                object result = mi.Invoke(o, new object[] { context,args });
+                object result = mi.Invoke(o, new object[] { context,sm,args });
                 return result;
             }
             catch (Exception e)
