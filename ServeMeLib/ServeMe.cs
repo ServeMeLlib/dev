@@ -394,7 +394,7 @@ namespace ServeMeLib
         }
 
         //https://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
-        internal bool PortInUse(int port)
+        internal bool PortNotInUse(int port)
         {
             bool isAvailable = true;
             IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
@@ -433,7 +433,7 @@ namespace ServeMeLib
             if (this.ExtractFromSettings("app sslport", out data) == 2)
             {
                 int port = int.Parse(data[1]);
-                if (this.PortInUse(port))
+                if (!this.PortNotInUse(port))
                     throw new Exception($"Ssl Port {port} in setting is in use");
                 return port;
             }
@@ -446,7 +446,7 @@ namespace ServeMeLib
             if (this.ExtractFromSettings("app port", out data) == 2)
             {
                 int port = int.Parse(data[1]);
-                if (this.PortInUse(port))
+                if (!this.PortNotInUse(port))
                     throw new Exception($"Port {port} in setting is in use");
                 return port;
             }

@@ -145,11 +145,11 @@ namespace ServeMeLib
             }
            if (portHttps == null)
            {
-                var allowableHttpsPortsByVisualStudio = Enumerable.Range(44300, 33399).ToList();
+                var allowableHttpsPortsByVisualStudio = Enumerable.Range(44300, 44399).ToList();
 
                 for (int i = 0; i < allowableHttpsPortsByVisualStudio.Count; i++)
                 {
-                  if (!serveMe.PortInUse(allowableHttpsPortsByVisualStudio[i]))
+                  if (serveMe.PortNotInUse(allowableHttpsPortsByVisualStudio[i]))
                     {
                        portHttps = allowableHttpsPortsByVisualStudio[i];
                        serveMe.Log($"Yay! Found https port {portHttps} to use ....");
