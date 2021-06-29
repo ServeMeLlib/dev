@@ -14,7 +14,7 @@ namespace ServeMeLib
 
     public class ServeMe : IDisposable
     {
-        public static string Version = "0.37.0";
+        public static string Version = "0.38.0";
 
         internal static Action<Exception, string> _onError = null;
         public static void OnError(Action<Exception, string> handler)
@@ -81,6 +81,7 @@ namespace ServeMeLib
         public string InMemoryConfigurationPrepend { get; private set; }
 
         public int CurrentPortUsed { get; set; }
+        public int CurrentHttpsPortUsed { get; set; }
 
         public void Dispose()
         {
@@ -393,7 +394,7 @@ namespace ServeMeLib
         }
 
         //https://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
-        private bool PortInUse(int port)
+        internal bool PortInUse(int port)
         {
             bool isAvailable = true;
             IPGlobalProperties ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
@@ -426,6 +427,19 @@ namespace ServeMeLib
             return null;
         }
 
+        internal int? GetHttpsPortNumberFromSettings()
+        {
+            string[] data;
+            if (this.ExtractFromSettings("app sslport", out data) == 2)
+            {
+                int port = int.Parse(data[1]);
+                if (this.PortInUse(port))
+                    throw new Exception($"Ssl Port {port} in setting is in use");
+                return port;
+            }
+
+            return null;
+        }
         internal int? GetPortNumberFromSettings()
         {
             string[] data;
@@ -454,7 +468,7 @@ namespace ServeMeLib
             return null;
         }
 
-        public List<string> Start(string serverCsv = null, int? port = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null, Action<string, string> writeAllTextToFile = null)
+        public List<string> Start(string serverCsv = null, int? port = null, int? portHttps = null, Func<string, bool> fileExists = null, Func<string, string> readAllTextFromFile = null, Action<string, string> writeAllTextToFile = null)
         {
             this.FileExists = fileExists ?? this.FileExists;
             this.ReadAllTextFromFile = readAllTextFromFile ?? this.ReadAllTextFromFile;
@@ -465,8 +479,9 @@ namespace ServeMeLib
             try
             {
                 this.SetWorkingDirectory(this.GetWorkingPathFromSettings());
-                this.MyServer = new SimpleHttpServer(this, port ?? this.GetPortNumberFromSettings());
+                this.MyServer = new SimpleHttpServer(this, port ?? this.GetPortNumberFromSettings(), portHttps?? this.GetHttpsPortNumberFromSettings());
                 this.CurrentPortUsed = this.MyServer.Port;
+                this.CurrentHttpsPortUsed = this.MyServer.PortHttps;
                 Console.WriteLine("Serving!");
                 Console.WriteLine("");
                 Console.WriteLine("If you are using server.csv then note that the csv format is :");
@@ -517,16 +532,32 @@ namespace ServeMeLib
                 Console.WriteLine("");
                 Console.BackgroundColor = ConsoleColor.Black;
                 Console.ForegroundColor = ConsoleColor.Green;
+
+
+                endpoints.Add("https://localhost:" + this.MyServer.PortHttps);
+                endpoints.Add("https://127.0.0.1:" + this.MyServer.PortHttps);
+                Console.WriteLine("- Local: " + "https://localhost:" + this.MyServer.PortHttps);
+                Console.WriteLine("- Local: " + "https://127.0.0.1:" + this.MyServer.PortHttps);
+
+
+
                 endpoints.Add("http://localhost:" + this.MyServer.Port);
                 endpoints.Add("http://127.0.0.1:" + this.MyServer.Port);
                 Console.WriteLine("- Local: " + "http://localhost:" + this.MyServer.Port);
                 Console.WriteLine("- Local: " + "http://127.0.0.1:" + this.MyServer.Port);
+
+
                 IPAddress[] localIPs = Dns.GetHostAddresses(Dns.GetHostName());
                 foreach (IPAddress addr in localIPs)
                     if (addr.AddressFamily == AddressFamily.InterNetwork)
                     {
                         endpoints.Add($"http://{addr}:" + this.MyServer.Port);
                         Console.WriteLine($"- On your network: http://{addr}:" + this.MyServer.Port);
+
+                      endpoints.Add($"https://{addr}:" + this.MyServer.PortHttps);
+                        Console.WriteLine($"- On your network: https://{addr}:" + this.MyServer.PortHttps);
+
+
                     }
 
                 Console.WriteLine("");

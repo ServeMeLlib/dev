@@ -148,6 +148,9 @@ to return http://www.google.com content  when only GET and the path and query do
 
 ---- To specify a port number to use, put this in your server.csv `app port,8080` . The port must not be in use.
 
+---- To specify https port to use `app sslport,44300` . It will make things easier if you have visual studio installed which will setup ports 44300 to 44399 ports for use with https, otherwise, you have to setup ssl yourself, e.g see https://www.pluralsight.com/blog/software-development/selfcert-create-a-self-signed-certificate-interactively-gui-or-programmatically-in-net  for a convinent self cert tool to use.
+
+
 ---- To open your default browser automatically when you start ServeMe.exe , put this in your server.csv `app openDefaultBrowserOnStartUp`
 
 ---- Ok, how about this, imagine you'd like to call a method from an assembly from a dll file. Here is how to do it in server.csv `getSome,assembly file:///D:/ServeMe.Tests/bin/Debug/ServeMe.Tests.DLL ServeMe.Tests.when_serve_me_runs DoSomething w,get` Inside unit tests you can use this helper method to compose the execution instruction `string instruction = ServeMe.GetMethodExecutionInstruction(this.GetType(), methodName, arg);`
@@ -156,10 +159,13 @@ to return http://www.google.com content  when only GET and the path and query do
 The script can be something like this
 `return DateTime.UtcNow;` inside a file called, say, code.txt
 The server entry will be (note that script has access to global variables context and args[] )
-`getSome,sourcecode csharp code.txt,get`
+`getSome,sourcecode csharp code.cs,get`
 
-The class will be auto loaded from 
-`code.txt.classes`
+---- doing `app classes,helper1.cs,helper2.cs,helper3.cs` will load helper 1 2 and 3  along with any script specified in `sourcecode csharp code.cs` config , and they must be c# classes
+
+
+
+---- when executing scripts in `getSome,sourcecode csharp code.cs,get` , you have access to the `_` variable as a global variable which contains helper methods
 
 so a get to /getsome will return the value of  DateTime.UtcNow;
 

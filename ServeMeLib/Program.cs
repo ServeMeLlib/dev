@@ -641,7 +641,7 @@ watchpath [file or path location] [command] <--- watch directory for changes and
                         OnlineProcess.StartInfo.FileName = @"cmd.exe";
                         string ngrokPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\ngrok\bin\ngrok.exe");
                         //var p = $@"{Path.GetPathRoot(Environment.SystemDirectory)}Users\{Environment.UserName}\AppData\Roaming\npm\node_modules\ngrok\bin\ngrok.exe";
-                        OnlineProcess.StartInfo.Arguments = $@"/c {ngrokPath}  http {server.CurrentPortUsed}";
+                        OnlineProcess.StartInfo.Arguments = $@"/c {ngrokPath}  http {server.CurrentHttpsPortUsed}";
                         OnlineProcess.Start();
                         ConsoleWriteLine("IMPORTANT: Remember to run 'go offline' to take your server offline!");
                         //todo in future , remove dependency on ngrok

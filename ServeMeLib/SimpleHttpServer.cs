@@ -1,4 +1,5 @@
 ﻿using System.Runtime.Serialization.Json;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ServeMeLib
 {
@@ -106,6 +107,7 @@ namespace ServeMeLib
 
         private HttpListener _listener;
         private int _port;
+        private int _portHttps;
         //private string _rootDirectory;
 
         private Thread _serverThread;
@@ -116,7 +118,7 @@ namespace ServeMeLib
         ///     Construct server with suitable port.
         /// </summary>
         /// <param name="path">Directory path to serve.</param>
-        public SimpleHttpServer(ServeMe serveMe, int? port = null)
+        public SimpleHttpServer(ServeMe serveMe, int? port = null, int? portHttps = null)
         {
             ServicePointManager.DefaultConnectionLimit = 100;
             var handler = new HttpClientHandler
@@ -141,13 +143,39 @@ namespace ServeMeLib
                 port = ((IPEndPoint)l.LocalEndpoint).Port;
                 l.Stop();
             }
+           if (portHttps == null)
+           {
+                var allowableHttpsPortsByVisualStudio = Enumerable.Range(44300, 33399).ToList();
+
+                for (int i = 0; i < allowableHttpsPortsByVisualStudio.Count; i++)
+                {
+                  if (!serveMe.PortInUse(allowableHttpsPortsByVisualStudio[i]))
+                    {
+                       portHttps = allowableHttpsPortsByVisualStudio[i];
+                       serveMe.Log($"Yay! Found https port {portHttps} to use ....");
+                       break;
+                    }
+
+                  if (i == allowableHttpsPortsByVisualStudio.Count - 1)
+                  {
+                      serveMe.Log(
+                          "Unable to find any siutable https port to use from list between 44300 and 44399. It's unlikely that I will be able to respond to https endpoint");
+                  }
+                }
+           }
 
             this.ServeMe.Log($"Using port {port}");
-            this.Initialize(port.Value);
+            this.ServeMe.Log($"Using https port {portHttps}");
+            this.Initialize(port.Value,portHttps.Value);
         }
 
         private ServeMe ServeMe { get; }
 
+        public int PortHttps
+        {
+            get => this._portHttps;
+            private set { }
+        }
         public int Port
         {
             get => this._port;
@@ -167,11 +195,13 @@ namespace ServeMeLib
             client.Dispose();
             this._serverThread.Abort();
         }
-
+    
         private void Listen()
         {
             //https://github.com/arshad115/HttpListenerServer
             /*
+              powershell -Command "New-SelfSignedCertificate -DnsName localhost -CertStoreLocation cert:\LocalMachine\My -NotAfter (Get-Date).AddYears(10)"
+             
             A URI prefix string is composed of a scheme (http or https), a host, an optional port,
             and an optional path. An example of a complete prefix string is "http://www.contoso.com:8080/customerData/".
             Prefixes must end in a forward slash ("/"). The HttpListener object with the prefix that most closely matches
@@ -183,13 +213,27 @@ namespace ServeMeLib
             all requests sent to a port, replace the host element with the "+" character, "https://+:8080".
             The "*" and "+" characters can be present in prefixes that include paths.
             */
+
             this._listener = new HttpListener();
             this._listener.Prefixes.Add("http://*:" + this._port.ToString() + "/");
+            this._listener.Prefixes.Add("https://*:" + this._portHttps.ToString() + "/");
             //this._listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
             //this._listener.Prefixes.Add("http://+:80/");
-            this.ServeMe.Log($"About to start listening on port {this._port}");
+
+
+
+            //X509Certificate2 cert = new X509Certificate2( X509Certificate.CreateFromCertFile("ServeMeCert.cer"));
+            //X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine);
+            //store.Open(OpenFlags.ReadWrite);
+            //if (!store.Certificates.Contains(cert))
+            //{
+            //    store.Add(cert);
+            //}
+            //store.Close();
+
+            this.ServeMe.Log($"About to start listening on port {this._port} and https  {this._portHttps}");
             this._listener.Start();
-            this.ServeMe.Log($"Now listening on port {this._port}");
+            this.ServeMe.Log($"Now listening on port {this._port}  and https  {this._portHttps}");
             while (true)
             {
                 HttpListenerContext context = null;
@@ -968,9 +1012,10 @@ namespace ServeMeLib
             return tokensPasts;
         }
 
-        private void Initialize(int port)
+        private void Initialize(int port, int https)
         {
             this._port = port;
+            this._portHttps = https;
             this._serverThread = new Thread(this.Listen);
             this._serverThread.Start();
         }
